@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int                @id @default(autoincrement())
+  name           String
+  email          String             @unique
+  passwordHash   String
+  role           Role
+  createdAt      DateTime           @default(now())
+
+  // Relations
+  createdExercises Exercise[]       @relation("CreatedExercises")
+  attempts        ExerciseAttempt[]
+  progress        StudentProgress[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  title     String
+  color     String     // hex string
+  iconPath  String
+
+  chapters  Chapter[]
+}
+
+model Chapter {
+  id          Int        @id @default(autoincrement())
+  title       String
+  categoryId  Int
+  category    Category   @relation(fields: [categoryId], references: [id])
+
+  exercises   Exercise[]
+  progress    StudentProgress[]
+}
+
+model Exercise {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  difficulty  Int
+  chapterId   Int
+  createdBy   Int
+  chapter     Chapter    @relation(fields: [chapterId], references: [id])
+  teacher     User       @relation("CreatedExercises", fields: [createdBy], references: [id])
+
+  attempts    ExerciseAttempt[]
+}
+
+model ExerciseAttempt {
+  id             Int      @id @default(autoincrement())
+  status         AttemptStatus
+  attemptsCount  Int
+  hintUsedCount  Int
+  createdAt      DateTime @default(now())
+
+  exerciseId     Int
+  studentId      Int
+
+  exercise       Exercise @relation(fields: [exerciseId], references: [id])
+  student        User     @relation(fields: [studentId], references: [id])
+}
+
+model StudentProgress {
+  id                 Int     @id @default(autoincrement())
+  studentId          Int
+  chapterId          Int
+  completedExercises Int
+  successRate        Float
+
+  student            User    @relation(fields: [studentId], references: [id])
+  chapter            Chapter @relation(fields: [chapterId], references: [id])
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+}
+
+enum AttemptStatus {
+  PASSED
+  FAILED
+}
