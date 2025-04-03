@@ -25,7 +25,7 @@ export default function Index() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push('/auth/StudentLoginScreen')}>
+            onPress={() => router.push('/auth/LoginScreen?role=student')}>
             <Image
               source={require('@/assets/images/student-icon.png')}
               style={styles.icon}
@@ -35,7 +35,7 @@ export default function Index() {
 
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push('/auth/TeacherLoginScreen')}>
+            onPress={() => router.push('/auth/LoginScreen?role=teacher')}>
             <Image
               source={require('@/assets/images/teacher-icon.png')}
               style={styles.icon}
