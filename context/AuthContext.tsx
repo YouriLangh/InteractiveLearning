@@ -9,7 +9,7 @@ interface AuthContextType {
       email: string, 
       password: string, 
       role: 'STUDENT' | 'TEACHER'
-    ) => Promise<{ id: number; role: string }>; // Update return type
+    ) => Promise<{ id: number; role: string }>; 
     signup: (payload: { name: string; email: string; password: string; role: string }) => Promise<void>;
     logout: () => Promise<void>;
   }
@@ -57,9 +57,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return userData;
     } catch (error) {
-      setUser(null); // Clear any existing user state
-      await authService.logout(); // Clear invalid tokens
-      throw error; // Re-throw for UI handling
+      setUser(null); 
+      await authService.logout();
+      throw error; 
     }
   };
   const handleSignup = async (payload: { 
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
-    router.replace('/auth/LoginScreen'); // Add navigation if needed
+    router.replace('/auth/LoginScreen');
   };
   
   return (

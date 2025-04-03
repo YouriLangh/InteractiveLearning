@@ -34,7 +34,6 @@ api.interceptors.response.use(
                      error.message || 
                      'Request failed';
   
-      // Clear auth data on 401
       if (status === 401) {
         removeSecureValue('authToken');
         removeSecureValue('userRole');

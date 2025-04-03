@@ -32,7 +32,7 @@ export interface User {
     title: string;
     description: string;
     difficulty: ExerciseDifficulty;
-    created_by: number; // Teacher ID
+    created_by: number; 
     created_at: Date;
   }
   
