@@ -14,6 +14,7 @@ import BackgroundWrapper from '@/app/components/BackgroundWrapper';
 
 const { width } = Dimensions.get('window');
 
+
 export default function Index() {
   const router = useRouter();
 
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: 'white',
+    color: 'black',
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: '#66CE7D',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
   },
   signupButton: {
     marginTop: 10,
-    backgroundColor: '#1976D2',
+    backgroundColor: '#DADADA',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,

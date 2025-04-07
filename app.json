@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#002B5B"
+        "backgroundColor": "#C0E8E0"
       },
       "package": "com.anonymous.InteractiveLearning"
     },
@@ -39,7 +39,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#002B5B"
+          "backgroundColor": "#C0E8E0"
         }
       ]
     ],

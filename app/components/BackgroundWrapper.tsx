@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View, Dimensions } from 'react-native';
 import NavigationBar from './NavigationBar';
+import { opacity } from 'react-native-reanimated/lib/typescript/Colors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,21 +14,18 @@ export default function BackgroundWrapper({ children }: Props) {
     <View style={styles.container}>
 
       {/* Top left */}
-      <Image source={require('@/assets/images/background-cube-1.png')} style={[styles.cube, styles.cubeTopLeft]} />
-      <Image source={require('@/assets/images/background-cube-1.png')} style={[styles.cube, { top: 80, left: 40, width: 50, height: 50, opacity: 0.3 }]} />
+      <Image source={require('@/assets/images/background-cube-2.png')} style={[styles.cube, styles.cubeTopLeft, {opacity:0.25}]} />
 
       {/* Top right */}
-      <Image source={require('@/assets/images/background-cube-2.png')} style={[styles.cube, styles.cubeTopRight]} />
+      <Image source={require('@/assets/images/background-cube-2.png')} style={[styles.cube, styles.cubeTopRight , {opacity:0.25}]} />
       <Image source={require('@/assets/images/background-cube-2.png')} style={[styles.cube, { top: 160, right: 50, width: 60, height: 60, opacity: 0.25 }]} />
 
       {/* Bottom right */}
-      <Image source={require('@/assets/images/background-cube-group.png')} style={[styles.cube, styles.cubeBottom]} />
-      <Image source={require('@/assets/images/background-cube-1.png')} style={[styles.cube, { bottom: 100, right: 40, width: 80, height: 80, opacity: 0.2 }]} />
+      <Image source={require('@/assets/images/background-cube-group.png')} style={[styles.cube, styles.cubeBottom, {opacity:0.25}]} />
 
       {/* Bottom left */}
       <Image source={require('@/assets/images/background-cube-2.png')} style={[styles.cube, { bottom: 40, left: 30, width: 70, height: 70, opacity: 0.2 }]} />
 
-      {/* Navbar and Screen Content */}
       <NavigationBar />
       {children}
     </View>
@@ -37,7 +35,7 @@ export default function BackgroundWrapper({ children }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0062CC',
+    backgroundColor: '#fff7ec',
     position: 'relative',
   },
   cube: {

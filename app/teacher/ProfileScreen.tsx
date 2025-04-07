@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   StyleSheet,
@@ -10,6 +10,8 @@ import {
   Image,
 } from 'react-native';
 import BackgroundWrapper from '@/app/components/BackgroundWrapper';
+import ReturnButton from '@/app/components/ui/ReturnButton';
+
 
 const { width } = Dimensions.get('window');
 
@@ -27,26 +29,38 @@ const students = [
 
 export default function ProfileScreen() {
     const router = useRouter(); 
+    const [activeTab, setActiveTab] = useState('students');
+
   return (
     <BackgroundWrapper>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerRow}>
-          <Text style={styles.header}>Dashboard</Text>
-          <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push('/teacher/CreateExerciseScreen')}>
-                <Text style={styles.addButtonText}>Add Exercise</Text>
-        </TouchableOpacity>
-        </View>
+      <ReturnButton />
+      <View style={styles.headerRow}>
+      <TouchableOpacity onPress={() => router.push('/teacher/ProfileScreen')}>
+        <Text style={[styles.header, activeTab === 'students' && styles.active]}>
+          Students
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/teacher/ChapterScreen')}>
+        <Text style={[styles.header, activeTab === 'chapters' && styles.active]}>
+          Chapters
+        </Text>
+      </TouchableOpacity>
+    </View>
 
-                <View style={styles.grid}>
+        <View style={styles.grid}>
         {students.map((student, index) => (
             <TouchableOpacity
             key={index}
             style={styles.card}
             onPress={() => router.push('/teacher/StudentDetailScreen')}
             >
-            <View style={styles.avatar} />
+          <TouchableOpacity style={styles.avatar}>
+            <Image 
+              source={require('@/assets/images/avatar.png')} 
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
             <View style={styles.infoText}>
                 <Text style={styles.name}>{student.name}</Text>
                 <Text style={styles.label}>Exercise</Text>
@@ -66,15 +80,21 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'flex-start',
+    paddingVertical: 10,
   },
   header: {
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    marginHorizontal: 20,
+    color: '#555',
   },
+  active: {
+    color: '#000',
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
+  },
+
   addButton: {
     backgroundColor: '#A4C8F0',
     paddingVertical: 8,
@@ -92,8 +112,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    backgroundColor: '#B0D9FF',
-    width: '48%',
+    backgroundColor: '#FFFFFF',
+    width: '33%',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
@@ -101,11 +121,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatar: {
-    width: 50,
+    width: 60,
     height: 60,
-    backgroundColor: '#2E2B5F',
-    borderRadius: 4,
-    marginRight: 12,
+    marginRight: 15,
+    marginLeft: 8,
+    resizeMode: 'contain',
+  
   },
   infoText: {
     flex: 1,

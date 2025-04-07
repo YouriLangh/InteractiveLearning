@@ -6,20 +6,19 @@ export default function ReturnButton() {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-
   return (
     <TouchableOpacity
       style={[
         styles.button,
         {
           top: 20,
-          right: 10,
+          left: 10,
         },
       ]}
       onPress={() => router.back()}
     >
       <Image
-        source={require('@/assets/images/returnbtn.png')} 
+        source={require('@/assets/images/returnbtn.png')}
         style={styles.icon}
       />
     </TouchableOpacity>
@@ -30,16 +29,15 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     zIndex: 99,
-    backgroundColor: '#ECE9E9',
     borderRadius: 8,
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
   },
 });
