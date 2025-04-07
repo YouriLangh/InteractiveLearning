@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,64 +9,186 @@ import {
   Dimensions,
 } from 'react-native';
 import BackgroundWrapper from '@/app/components/BackgroundWrapper';
+import ReturnButton from '@/app/components/ui/ReturnButton';
+
 
 const { width } = Dimensions.get('window');
 
+
 const data = {
-  name: 'John Doe',
-  avatarColor: '#2E2B5F',
+  name: 'John',
+  avatarColor: '#FFD28E', 
   chapters: [
     {
-      title: 'Chapter 1: Addition 8/8',
+      title: 'Chapter 1: Numbers',
+      expanded: false,
       exercises: [
-        { title: 'Exercise 1: Success', attempts: [false, false, false, true], hints: 3 },
-        { title: 'Exercise 2: Success', attempts: [false, true], hints: 1 },
-        { title: 'Exercise 3: Fail', attempts: [false, false, false], hints: 2 },
+        {
+          id: 1,
+          title: 'Exercise 1: Make the number 21 using blocks.',
+          timeTaken: '13m20s',
+          hintsUsed: 10,
+          attempts: [false, false, false, true],
+        },
+        {
+          id: 2,
+          title: 'Exercise 2: Make the number 35 using blocks.',
+          timeTaken: '',
+          hintsUsed: 0,
+          attempts: [],
+        },
+        {
+          id: 3,
+          title: 'Exercise 3: Make the number 215 using blocks.',
+          timeTaken: '',
+          hintsUsed: 0,
+          attempts: [],
+        },
       ],
     },
     {
-      title: 'Chapter 2: Deduction 7/7',
+      title: 'Chapter 2: Addition',
+      expanded: false,
       exercises: [
-        { title: 'Exercise 1: Success', attempts: [false, false, true], hints: 2 },
-        { title: 'Exercise 2: Success', attempts: [false, true], hints: 1 },
-        { title: 'Exercise 3: Fail', attempts: [false, false, false], hints: 3 },
+        {
+          id: 1,
+          title: 'Exercise 1: Use blocks to solve 2 + 15.',
+          timeTaken: '10m45s',
+          hintsUsed: 5,
+          attempts: [false, true],
+        },
+        {
+          id: 2,
+          title: 'Exercise 2: Another addition problem.',
+          timeTaken: '',
+          hintsUsed: 0,
+          attempts: [],
+        },
       ],
     },
   ],
 };
 
 export default function StudentDetailScreen() {
+
+  const [chapters, setChapters] = useState(data.chapters);
+
+
+  const toggleChapter = (index: number) => {
+    const updated = [...chapters];
+    updated[index].expanded = !updated[index].expanded;
+    setChapters(updated);
+  };
+
   return (
     <BackgroundWrapper>
       <ScrollView contentContainerStyle={styles.container}>
+      <ReturnButton />
+
         <View style={styles.topRow}>
-          <View style={[styles.avatar, { backgroundColor: data.avatarColor }]} />
+          <Image
+            source={require('@/assets/images/avatar.png')}
+            style={styles.avatar}
+          />
           <Text style={styles.name}>{data.name}</Text>
           <TouchableOpacity style={styles.printButton}>
             <Text style={styles.printText}>Print Report</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.reportBox}>
-          {data.chapters.map((chapter, cIndex) => (
-            <View key={cIndex} style={styles.chapterBox}>
-              <Text style={styles.chapterTitle}>{chapter.title}</Text>
-              {chapter.exercises.map((ex, eIndex) => (
-                <View key={eIndex} style={styles.exerciseRow}>
-                  <Text style={styles.exerciseTitle}>{ex.title}</Text>
-                  <View style={styles.attemptsBox}>
-                    {ex.attempts.map((a, i) => (
-                      <Text key={i} style={{ color: a ? 'green' : 'red', fontSize: 18 }}>
-                        {a ? '✓' : '✕'}
-                      </Text>
-                    ))}
-                  </View>
-                  <Text style={styles.hintText}>Number of hints used: {ex.hints}</Text>
+
+        {chapters.map((chapter, cIndex) => {
+          const isExpanded = chapter.expanded;
+          return (
+            <View key={cIndex} style={styles.chapterContainer}>
+
+              <TouchableOpacity
+                style={styles.chapterHeader}
+                onPress={() => toggleChapter(cIndex)}
+              >
+                <Text style={styles.chapterTitle}>{chapter.title}</Text>
+                <Image
+                  source={
+                    isExpanded
+                      ? require('@/assets/images/arrow-up.png')
+                      : require('@/assets/images/arrow-down.png')
+                  }
+                  style={styles.arrowIcon}
+                />
+              </TouchableOpacity>
+
+
+              {isExpanded && (
+                <View style={styles.exercisesContainer}>
+                  {chapter.exercises.map((ex, eIndex) => {
+                    const isFirst = eIndex === 0;
+                    return (
+                      <View
+                        key={ex.id}
+                        style={[
+                          styles.exerciseRow,
+                          isFirst && styles.highlightedExercise,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.exerciseTitle,
+                            isFirst && styles.highlightedExerciseText,
+                          ]}
+                        >
+                          {ex.title}
+                        </Text>
+
+
+                        {isFirst && (
+                          <View style={styles.detailsRow}>
+                            <Text style={styles.detailsText}>
+                              Time taken: {ex.timeTaken || 'N/A'}
+                            </Text>
+                            <Text style={styles.detailsText}>
+                              Hints used: {ex.hintsUsed}
+                            </Text>
+                            <View style={styles.attemptsContainer}>
+                              <Text style={styles.detailsText}>Attempts: </Text>
+                              {ex.attempts.length > 0 ? (
+                                ex.attempts.map((attempt, i) => (
+                                  <Text
+                                    key={i}
+                                    style={[
+                                      styles.attemptIcon,
+                                      { color: attempt ? 'green' : 'red' },
+                                    ]}
+                                  >
+                                    {attempt ? '✓' : '✕'}
+                                  </Text>
+                                ))
+                              ) : (
+                                <Text style={styles.detailsText}>None</Text>
+                              )}
+                            </View>
+                          </View>
+                        )}
+
+
+                        {!isFirst && (
+                          <View style={styles.nonFirstDetails}>
+                            <Text style={styles.hintText}>
+                              {ex.attempts.length > 0
+                                ? `Attempts: ${ex.attempts
+                                    .map((a) => (a ? '✓' : '✕'))
+                                    .join(', ')}`
+                                : 'No attempts yet'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
-              ))}
+              )}
             </View>
-          ))}
-        </View>
+          );
+        })}
       </ScrollView>
     </BackgroundWrapper>
   );
@@ -75,27 +197,29 @@ export default function StudentDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 25,
+    paddingBottom: 60,
   },
+
+
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 20,
+    marginTop: 20,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 70,
+    height: 70,
+    marginRight: 12,
   },
   name: {
-    fontSize: 24,
-    color: 'white',
+    fontSize: 20,
+    color: '#333',
     fontWeight: 'bold',
     flex: 1,
-    textAlign: 'center',
   },
   printButton: {
-    backgroundColor: '#A4C8F0',
+    backgroundColor: '#487D33',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -104,33 +228,82 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  reportBox: {
-    backgroundColor: 'white',
+
+
+  chapterContainer: {
+    marginBottom: 16,
     borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#fff',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 1,
   },
-  chapterBox: {
-    marginBottom: 18,
+  chapterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
   chapterTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    color: '#333',
+  },
+  arrowIcon: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+
+
+  exercisesContainer: {
+    marginTop: 6,
   },
   exerciseRow: {
-    marginBottom: 10,
+    backgroundColor: '#fff',
+    marginVertical: 4,
+    borderRadius: 8,
+    padding: 10,
+  },
+  highlightedExercise: {
+    backgroundColor: '#E9FBD5', 
   },
   exerciseTitle: {
     fontWeight: 'bold',
     fontSize: 15,
-    marginBottom: 4,
+    color: '#333',
+    marginBottom: 6,
   },
-  attemptsBox: {
+  highlightedExerciseText: {
+    color: '#333',
+  },
+  detailsRow: {
+    flexDirection: 'column',
+    marginTop: 4,
+  },
+  detailsText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 2,
+  },
+  attemptsContainer: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 4,
+    alignItems: 'center',
+  },
+  attemptIcon: {
+    fontSize: 16,
+    marginLeft: 4,
+  },
+
+  nonFirstDetails: {
+    marginTop: 2,
   },
   hintText: {
-    fontSize: 14,
+    fontSize: 13,
+    color: '#666',
   },
 });

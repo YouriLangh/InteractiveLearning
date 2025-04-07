@@ -108,12 +108,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '800',
-    color: 'white',
+    color: 'black',
   },
   subtitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: 'white',
+    color: 'black',
   },
   exerciseSection: {
     alignItems: 'center',
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   exerciseTitle: {
     fontSize: 20,
-    color: 'white',
+    color: 'black',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: '#98CDFF',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
