@@ -60,11 +60,11 @@ coverage/
 *.sublime-project
 
 #backend
-backend/.env
-backend/node_modules/
-backend/package-lock.json
-backend/yarn.lock
-backend/yarn-debug.log*
-backend/yarn-error.log*
-backend/yarn-debug.log
-backend/yarn-error.log
+backend_blocked/.env
+backend_blocked/node_modules/
+backend_blocked/package-lock.json
+backend_blocked/yarn.lock
+backend_blocked/yarn-debug.log*
+backend_blocked/yarn-error.log*
+backend_blocked/yarn-debug.log
+backend_blocked/yarn-error.log
