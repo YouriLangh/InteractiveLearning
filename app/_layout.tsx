@@ -1,10 +1,13 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from '@/context/AuthContext';
+import { RouteGuard } from './components/RouteGuard';
 
 export default function Layout() {
   return (
-    <AuthProvider> 
-      <Stack screenOptions={{ headerShown: false }} />
+    <AuthProvider>
+      <RouteGuard>
+        <Stack screenOptions={{ headerShown: false }} />
+      </RouteGuard>
     </AuthProvider>
   );
 }
