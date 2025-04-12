@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<{ id: number; role: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -28,13 +29,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(userData);
         setIsLoading(false);
         
-        console.log('Auth check completed. User exists:', !!userData);
-        if (!userData) {
-          console.log('Redirecting to login');
-          router.replace('/auth/LoginScreen');
-        } else {
-          console.log('Redirecting to dashboard');
-          router.replace(userData.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentCategoryScreen');
+        if (!isInitialized) {
+          setIsInitialized(true);
+          if (!userData) {
+            router.replace('/auth/LoginScreen');
+          } else {
+            router.replace(userData.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList');
+          }
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     checkAuth();
-  }, [router]);
+  }, [router, isInitialized]);
   
   const handleLogin = async (
     email: string,
