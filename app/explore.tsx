@@ -1,112 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native';
-import { PaintStyle, Skia } from '@shopify/react-native-skia';
-import {
-  OpenCV,
-  ObjectType,
-  Rect,
-  DataTypes,
-  ColorConversionCodes,
-  HoughModes,
-} from 'react-native-fast-opencv';
+import React, { useState, useEffect, useRef } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { Skia, PaintStyle } from "@shopify/react-native-skia";
+import RNFS from "react-native-fs";
+import axios, { AxiosError } from "axios";
+
 import {
   Camera,
   useCameraDevice,
-  useCameraFormat,
   useCameraPermission,
   useSkiaFrameProcessor,
-} from 'react-native-vision-camera';
-import { useResizePlugin } from 'vision-camera-resize-plugin';
-import { Worklets } from 'react-native-worklets-core';
+} from "react-native-vision-camera";
+import { useResizePlugin } from "vision-camera-resize-plugin";
+import { Worklets, useRunOnJS } from "react-native-worklets-core";
 
+const paint = Skia.Paint();
+paint.setStyle(PaintStyle.Fill);
+paint.setStrokeWidth(4);
+paint.setColor(Skia.Color("red"));
 
 export default function Explore() {
-  const [processImage, setProcessImage] = useState(false);
-  const device = useCameraDevice('back');
-
-  // const format = useCameraFormat(device, Templates.FrameProcessing);
+  const device = useCameraDevice("back");
+  const camera = useRef<Camera>(null);
   const { hasPermission, requestPermission } = useCameraPermission();
- 
   const { resize } = useResizePlugin();
- 
-  const handleDelayEvaluation = Worklets.createRunOnJS((boolean : false) => {
-    setTimeout(() => setProcessImage(boolean), 3000);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+
+
+  async function takeAndUploadSnapshot() {
+    const snapshot = await camera.current?.takeSnapshot({ quality: 90 });
+    console.log("Taking photo...");
+    if (!snapshot?.path) return;
+
+    const fileUri = snapshot.path;
+    const fileType = "image/jpeg";
+    // Convert the image to base64
+    const base64Image = await RNFS.readFile(fileUri, "base64");
+    // console.log(base64Image);
+
+    try {
+      const response = await axios.post("http://192.168.1.113:3001/upload", {
+        image: base64Image,
+        fileType: fileType, 
       });
-  useEffect(() => {
-  console.log(device?.sensorOrientation)
-  }, [device?.sensorOrientation]);
+      setImageBase64(response.data.processedImage);
+      console.log("Image uploaded successfully", response.data);
+    } catch (error) {
+      console.error("Error uploading image", error);
+    }
+  }
 
-
-const frameProcessor = useSkiaFrameProcessor((frame) => {
-  'worklet';
-
-  frame.render()
-  if(!processImage) return;
-  const height = frame.height / 4;
-  const width = frame.width / 4;
-
-  // Resize the frame for efficiency
-  const resized = resize(frame, {
-    scale: { width, height },
-    pixelFormat: 'bgr',
-    dataType: 'uint8',
-  });
-
-  const src = OpenCV.bufferToMat('uint8', height, width, 3, resized);
-
-  const gray = OpenCV.createObject(ObjectType.Mat, 0, 0, DataTypes.CV_8U);
-  OpenCV.invoke('cvtColor', src, gray, ColorConversionCodes.COLOR_BGR2GRAY);
-  //   const lowerBound = OpenCV.createObject(ObjectType.Scalar, 30, 60, 60);
-//   const upperBound = OpenCV.createObject(ObjectType.Scalar, 50, 255, 255);
-//   OpenCV.invoke('cvtColor', src, dst, ColorConversionCodes.COLOR_BGR2HSV);
-//   OpenCV.invoke('inRange', dst, lowerBound, upperBound, dst);
-
-  // Detect circles using HoughCircles
-  const circles = OpenCV.createObject(ObjectType.Mat, 0, 0, DataTypes.CV_32F);
-  OpenCV.invoke(
-    'HoughCircles',
-    gray,
-    circles,
-    HoughModes.HOUGH_GRADIENT,
-    1.5,  // dp (resolution scale)
-    20,   // minDist (distance between circles)
-    50,   // param1 (Canny edge threshold)
-    30,   // param2 (circle accumulator threshold)
-  );
-  // Convert circles to JS array
-  const detectedCircles = OpenCV.matToBuffer(circles, 'uint8');
-
-  console.log(`Detected dark circles: ${detectedCircles?.cols}`);
-
-  OpenCV.clearBuffers(); // Clean memory
-  handleDelayEvaluation(false);
-}, [handleDelayEvaluation]);
-
-
-
-  if (device == null || !hasPermission) return <Text style={StyleSheet.absoluteFill} onPress={requestPermission}>Give Permission</Text>;
-
-  useEffect(() => {
-    console.log(processImage)
-  }, [processImage]);
+  if (device == null || !hasPermission)
+    return (
+      <Text style={StyleSheet.absoluteFill} onPress={requestPermission}>
+        Give Permission
+      </Text>
+    );
 
   return (
-    <View style={StyleSheet.absoluteFill}>
-    <Camera
-      style={StyleSheet.absoluteFill}
-      device={device}
-      isActive={true}
-      // format={format}
-      resizeMode='contain'
-      outputOrientation='device'
-      // photoQualityBalance = "balanced"
-      
-      enableFpsGraph={true}
-      frameProcessor={frameProcessor}
-    />
-    <TouchableOpacity style={{ position: 'absolute', bottom: 20, left: 20, backgroundColor: "blue", padding:20 }} onPress={() => setProcessImage(true)}>
-    <Text> Evaluate Image</Text>
-    </TouchableOpacity>
+    <View style={StyleSheet.absoluteFillObject}>
+      {imageBase64 && (
+        <Image
+          source={{ uri: `data:image/png;base64,${imageBase64}` }}
+          style={styles.preview}
+          resizeMode="contain"
+        />
+      )}
+
+      <Camera
+        style={StyleSheet.absoluteFill}
+        device={device}
+        isActive={true}
+        photo={true}
+        ref={camera}
+        photoQualityBalance="speed"
+        resizeMode="contain"
+        outputOrientation="device"
+        enableFpsGraph={true}
+      />
+      <TouchableOpacity
+        style={{
+          width: 100,
+          height: 50,
+          zIndex: 10, // Ensure button is on top of Camera
+          position: "absolute",
+          right: 0,
+          bottom: 50,
+          backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional background for visibility
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+        onPress={takeAndUploadSnapshot}
+      >
+        <Text style={{ color: "white" }}>Take image</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  preview: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 500,
+    height: 500,
+    borderWidth: 1,
+    borderColor: "white",
+    zIndex: 20,
+  },
+});

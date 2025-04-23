@@ -99,7 +99,12 @@ npx prisma migrate dev --name init
 npx prisma generate
 ```
 
-5. Start the development server:
+5. Ensure you have python on your local device and install the python dependencies (for CV):
+```bash
+pip install -r requirements.txt
+```
+
+6. Start the development server:
 ```bash
 npm run dev
 ```
