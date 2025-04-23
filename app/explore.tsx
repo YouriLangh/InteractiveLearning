@@ -38,12 +38,12 @@ export default function Explore() {
     // console.log(base64Image);
 
     try {
-      const response = await axios.post("http://192.168.1.113:3001/upload", {
+      const response = await axios.post("http://192.168.129.9:5000/api/upload/solve", {
         image: base64Image,
         fileType: fileType, 
       });
       setImageBase64(response.data.processedImage);
-      console.log("Image uploaded successfully", response.data);
+      console.log("Image uploaded successfully");
     } catch (error) {
       console.error("Error uploading image", error);
     }

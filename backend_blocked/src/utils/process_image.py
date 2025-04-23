@@ -24,7 +24,7 @@ REF_PADDING = 100  # Optional: padding that works well at reference resolution
 # Calculate scale ratio (current image area / reference area)
 scale_ratio = (orig_w * orig_h) / (REF_WIDTH * REF_HEIGHT)
 min_area = int(REF_AREA * scale_ratio)
-PADDING = int(REF_PADDING * np.sqrt(scale_ratio))  # √ to scale linear padding
+PADDING = int(REF_PADDING * np.sqrt(scale_ratio))
 
 # Resize grayscale image for faster processing
 gray_small = cv2.resize(gray, (orig_w // 2, orig_h // 2))
@@ -49,8 +49,10 @@ cleaned_mask = cv2.morphologyEx(dark_mask, cv2.MORPH_OPEN, kernel)
 contours, _ = cv2.findContours(cleaned_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 # Convert for RGB display
-output_image_rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
+# output_image_rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
+output_image_bgr = image.copy()
 
+ctr = 0
 # Loop through contours and draw padded boxes
 for cnt in contours:
     area = cv2.contourArea(cnt)
@@ -61,6 +63,7 @@ for cnt in contours:
 
     circularity = 4 * np.pi * (area / (perimeter ** 2))
     if 0.7 < circularity <= 1.5:
+        ctr += 1
         x, y, w, h = cv2.boundingRect(cnt)
         x = int(x * scale_x)
         y = int(y * scale_y)
@@ -73,14 +76,14 @@ for cnt in contours:
         w_pad = min(orig_w, x + w + PADDING)
         h_pad = min(orig_h, y + h + PADDING)
 
-        cv2.rectangle(output_image_rgb, (x_pad, y_pad), (w_pad, h_pad), (255, 255, 255), 10)
+        cv2.rectangle(output_image_bgr, (x_pad, y_pad), (w_pad, h_pad), (255, 255, 255), 10)
 # Encode output image as base64
-_, buffer = cv2.imencode('.png', output_image_rgb)
+_, buffer = cv2.imencode('.png', output_image_bgr)
 img_base64 = base64.b64encode(buffer).decode('utf-8')
 
 # Output JSON
 result = {
-    "count": len(contours),
+    "count": ctr,
     "image": img_base64
 }
 
