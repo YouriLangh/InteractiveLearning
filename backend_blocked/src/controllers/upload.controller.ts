@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
 
-
 export const solve = async (req: Request, res: Response): Promise<Response> => {
     const { image, fileType } = req.body;
     if (!image || !fileType) {
@@ -13,14 +12,11 @@ export const solve = async (req: Request, res: Response): Promise<Response> => {
     const fileBuffer = Buffer.from(image, "base64");
     const fileName = "uploaded_image.png";
     const filePath = path.join(__dirname, "..", "uploads", fileName);
-    console.log("fp: ", filePath)
     const scriptPath = path.join(__dirname, "..", "utils", "process_image.py");
-    console.log("sp: ", scriptPath)
     fs.writeFileSync(filePath, fileBuffer); // sync to ensure file is ready before spawning
     console.log("Image written to file");
     const python = spawn("python", [scriptPath, filePath]);
 
-  
     console.log("Starting Python script...");
     let result = "";
     python.stdout.on("data", (data) => {

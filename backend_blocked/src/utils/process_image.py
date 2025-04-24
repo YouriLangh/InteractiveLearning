@@ -11,15 +11,14 @@ image_path = sys.argv[1]
 image = cv2.imread(image_path)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-
 # Store original dimensions
 orig_h, orig_w = gray.shape
 
-# Reference resolution (e.g., from phone image)
+# Largest reference resolution (e.g., from phone image)
 REF_WIDTH = 4000
 REF_HEIGHT = 3000
-REF_AREA = 200  # Area threshold that works well at reference resolution
-REF_PADDING = 100  # Optional: padding that works well at reference resolution
+REF_AREA = 200  # Required area of circles in pixels
+REF_PADDING = 100 # Padding around detected objects
 
 # Calculate scale ratio (current image area / reference area)
 scale_ratio = (orig_w * orig_h) / (REF_WIDTH * REF_HEIGHT)
@@ -48,12 +47,12 @@ cleaned_mask = cv2.morphologyEx(dark_mask, cv2.MORPH_OPEN, kernel)
 # Find contours
 contours, _ = cv2.findContours(cleaned_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Convert for RGB display
+# Convert for RGB display, only needed for tests
 # output_image_rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
 output_image_bgr = image.copy()
 
 ctr = 0
-# Loop through contours and draw padded boxes
+# Loop through contours and draw bounding boxes
 for cnt in contours:
     area = cv2.contourArea(cnt)
     perimeter = cv2.arcLength(cnt, True)
@@ -61,7 +60,7 @@ for cnt in contours:
     if area < min_area or perimeter == 0:
         continue
 
-    circularity = 4 * np.pi * (area / (perimeter ** 2))
+    circularity = 4 * np.pi * (area / (perimeter ** 2)) # Source: https://stackoverflow.com/questions/74580811/circularity-calculation-with-perimeter-area-of-a-simple-circle
     if 0.7 < circularity <= 1.5:
         ctr += 1
         x, y, w, h = cv2.boundingRect(cnt)
@@ -77,7 +76,8 @@ for cnt in contours:
         h_pad = min(orig_h, y + h + PADDING)
 
         cv2.rectangle(output_image_bgr, (x_pad, y_pad), (w_pad, h_pad), (255, 255, 255), 10)
-# Encode output image as base64
+
+# Encoded output image as base64
 _, buffer = cv2.imencode('.png', output_image_bgr)
 img_base64 = base64.b64encode(buffer).decode('utf-8')
 
