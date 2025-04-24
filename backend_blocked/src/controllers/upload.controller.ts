@@ -4,8 +4,8 @@ import path from "path";
 import { spawn } from "child_process";
 
 export const solve = async (req: Request, res: Response): Promise<Response> => {
-    const { image, fileType } = req.body;
-    if (!image || !fileType) {
+    const { image, fileType, answer } = req.body;
+    if (!image || !fileType || !answer) {
       return res.status(400).send("Image or fileType is missing.");
     }
     console.log("Received Image");
@@ -31,10 +31,12 @@ export const solve = async (req: Request, res: Response): Promise<Response> => {
             return res.status(500).send("No result from Python script");
             }
         const json = JSON.parse(result);
+
         res.send({
           message: "Image processed",
           darkSpotCount: json.count,
           processedImage: json.image, // base64 string of the processed image
+          solved: json.count === answer,
         });
       } catch (err) {
         console.error("Error parsing Python response:", err);

@@ -1,47 +1,43 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import { Skia, PaintStyle } from "@shopify/react-native-skia";
 import RNFS from "react-native-fs";
 import axios, { AxiosError } from "axios";
-
+import { useRouter } from 'expo-router';
 import {
   Camera,
   useCameraDevice,
   useCameraPermission,
-  useSkiaFrameProcessor,
 } from "react-native-vision-camera";
-import { useResizePlugin } from "vision-camera-resize-plugin";
-import { Worklets, useRunOnJS } from "react-native-worklets-core";
 
-const paint = Skia.Paint();
-paint.setStyle(PaintStyle.Fill);
-paint.setStrokeWidth(4);
-paint.setColor(Skia.Color("red"));
+
 
 export default function Explore() {
+  const router = useRouter();
   const device = useCameraDevice("back");
   const camera = useRef<Camera>(null);
   const { hasPermission, requestPermission } = useCameraPermission();
-  const { resize } = useResizePlugin();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
-
+  const [showSolveDialogue, setShowSolveDialogue] = useState(false);
 
   async function takeAndUploadSnapshot() {
     const snapshot = await camera.current?.takeSnapshot({ quality: 90 });
-    console.log("Taking photo...");
     if (!snapshot?.path) return;
 
     const fileUri = snapshot.path;
     const fileType = "image/jpeg";
+
     // Convert the image to base64
     const base64Image = await RNFS.readFile(fileUri, "base64");
-    // console.log(base64Image);
 
     try {
       const response = await axios.post("http://192.168.129.9:5000/api/upload/solve", {
         image: base64Image,
-        fileType: fileType, 
+        fileType: fileType,
+        answer: 12 
       });
+      console.log("Solved?,", response.data.solved);
+      setShowSolveDialogue(response.data.solved)
       setImageBase64(response.data.processedImage);
       console.log("Image uploaded successfully");
     } catch (error) {
@@ -49,6 +45,12 @@ export default function Explore() {
     }
   }
 
+  function handleDialogueClick() {
+    setShowSolveDialogue(false);
+    setImageBase64(null);
+    console.log("Redirecting...")
+    router.replace("/student/StudentExerciseList");
+  }
   if (device == null || !hasPermission)
     return (
       <Text style={StyleSheet.absoluteFill} onPress={requestPermission}>
@@ -57,16 +59,30 @@ export default function Explore() {
     );
 
   return (
-    <View style={StyleSheet.absoluteFillObject}>
-      {imageBase64 && (
+    <View style={StyleSheet.absoluteFill}>
+      {imageBase64 && !showSolveDialogue &&
         <Image
           source={{ uri: `data:image/png;base64,${imageBase64}` }}
-          style={styles.preview}
+          style={StyleSheet.absoluteFill}
           resizeMode="contain"
-        />
-      )}
+        />}
 
-      <Camera
+{showSolveDialogue && <View style={styles.dialogue}>
+      <Text style={{ color: "white", fontSize: 20 }}>
+       Exercise Solved!
+      </Text>
+      <TouchableOpacity
+        onPress={() => handleDialogueClick() }
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          padding: 15,
+        }}
+      >
+        <Text style={{ color: "white" }}>Close</Text>
+      </TouchableOpacity>
+    </View> 
+}
+      {!imageBase64 && <Camera
         style={StyleSheet.absoluteFill}
         device={device}
         isActive={true}
@@ -76,7 +92,7 @@ export default function Explore() {
         resizeMode="contain"
         outputOrientation="device"
         enableFpsGraph={true}
-      />
+      />}
       <TouchableOpacity
         style={{
           width: 100,
@@ -91,7 +107,7 @@ export default function Explore() {
         }}
         onPress={takeAndUploadSnapshot}
       >
-        <Text style={{ color: "white" }}>Take image</Text>
+        <Text style={{ color: "white", }}>Take image</Text>
       </TouchableOpacity>
     </View>
   );
@@ -106,6 +122,22 @@ const styles = StyleSheet.create({
     height: 500,
     borderWidth: 1,
     borderColor: "white",
+    zIndex: 20,
+  },
+  dialogue: {
+    display: "flex",
+    alignItems: "center",
+    padding: 50,
+    justifyContent: "space-between",
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    transform: [
+      { translateX: '-50%' },
+      { translateY: '-50%' },],
+    width: 500,
+    height: 300,
+    backgroundColor: "rgb(36, 184, 85)",
     zIndex: 20,
   },
 });

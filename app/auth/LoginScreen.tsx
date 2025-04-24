@@ -74,7 +74,7 @@ export default function LoginScreen() {
       if (user.role === 'TEACHER') {
         router.replace('/teacher/ProfileScreen');
       } else {
-        router.replace('/student/StudentCategoryScreen');
+        router.replace('/student/StudentExerciseList');
       }
     } catch (error: any) {
       console.error('Login failed:', error);
