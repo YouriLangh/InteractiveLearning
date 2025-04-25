@@ -31,7 +31,7 @@ export default function Explore() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [showSolveDialogue, setShowSolveDialogue] = useState(false);
-  const [isLoading, setisLoading] = useState(true);
+  const [isLoading, setisLoading] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [attemptMade, setAttemptMade] = useState(false);
 
@@ -91,6 +91,7 @@ export default function Explore() {
           answer: 12,
         }
       );
+      setisLoading(false);
       setDetectedDots(response.data.darkSpotCount);
       const solved = response.data.solved;
       setImageBase64(response.data.processedImage);
@@ -225,20 +226,32 @@ export default function Explore() {
       </View>
       {/* Loading Indicator */}
       {isLoading && (
-        <View style={StyleSheet.absoluteFill}>
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: "rgba(29, 29, 29, 0.75)",
+              zIndex: 30,
+              alignItems: "center",
+              justifyContent: "center",
+            },
+          ]}
+        >
           <View style={styles.loadingOverlay}>
             <LottieView
-              style={{ width: 100, height: 100 }}
+              style={{ width: 100, height: 150 }}
               source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
               autoPlay
               loop
             />
             <Text
               style={{
-                fontSize: 24,
+                fontSize: 28,
                 color: "rgb(255, 255, 255)",
-                fontFamily: "Poppins-SemiBold",
-                marginTop: 16,
+                fontFamily: "Poppins-Medium",
+                textAlign: "center",
+                marginTop: -5,
+                marginLeft: 20,
               }}
             >
               Loading...
@@ -338,9 +351,8 @@ const styles = StyleSheet.create({
     top: "50%",
     transform: [{ translateX: "-50%" }, { translateY: "-50%" }],
     zIndex: 30,
-    paddingVertical: 20,
+    paddingVertical: 25,
     paddingHorizontal: 80,
-    backgroundColor: "rgb(36, 36, 36)",
-    borderRadius: 5,
+    borderRadius: 25,
   },
 });
