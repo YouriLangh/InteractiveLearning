@@ -95,24 +95,26 @@ export default function Explore() {
       setDetectedDots(response.data.darkSpotCount);
       const solved = response.data.solved;
       setImageBase64(response.data.processedImage);
-      if (solved) {
-        setShowSolveDialogue(true);
-        vibrateFeedback("correct");
-        correctSound.play();
-        setIsFrozen(true); // freeze the camera
+      setTimeout(() => {
+        if (solved) {
+          setShowSolveDialogue(true);
+          vibrateFeedback("correct");
+          correctSound.play();
+          setIsFrozen(true); // freeze the camera
 
-        setTimeout(() => {
-          setShowSolveDialogue(false);
-          setIsFrozen(false);
-          console.log("Navigating to next screen");
-        }, 1500);
-      } else {
-        vibrateFeedback("wrong");
-        triggerShake();
-        setIsFrozen(true);
-        setShowPreview(true);
-        setAttemptMade(true); // Mark that an attempt has been made
-      }
+          setTimeout(() => {
+            setShowSolveDialogue(false);
+            setIsFrozen(false);
+            console.log("Navigating to next screen");
+          }, 1500);
+        } else {
+          vibrateFeedback("wrong");
+          triggerShake();
+          setIsFrozen(true);
+          setShowPreview(true);
+          setAttemptMade(true); // Mark that an attempt has been made
+        }
+      }, 150);
     } catch (error) {
       console.error("Upload failed:", error);
     }
@@ -180,6 +182,41 @@ export default function Explore() {
             </Text>
           </View>
         )}
+        {/* Loading Indicator */}
+        {isLoading && (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: "rgba(29, 29, 29, 0.75)",
+                zIndex: 30,
+                alignItems: "center",
+                justifyContent: "center",
+              },
+            ]}
+          >
+            <View style={styles.loadingOverlay}>
+              <LottieView
+                style={{ width: 100, height: 150 }}
+                source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
+                autoPlay
+                loop
+              />
+              <Text
+                style={{
+                  fontSize: 28,
+                  color: "rgb(255, 255, 255)",
+                  fontFamily: "Poppins-Medium",
+                  textAlign: "center",
+                  marginTop: -5,
+                  marginLeft: 20,
+                }}
+              >
+                Loading...
+              </Text>
+            </View>
+          </View>
+        )}
       </Animated.View>
 
       {/* Buttons */}
@@ -224,41 +261,7 @@ export default function Explore() {
           </Text>
         </TouchableOpacity>
       </View>
-      {/* Loading Indicator */}
-      {isLoading && (
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: "rgba(29, 29, 29, 0.75)",
-              zIndex: 30,
-              alignItems: "center",
-              justifyContent: "center",
-            },
-          ]}
-        >
-          <View style={styles.loadingOverlay}>
-            <LottieView
-              style={{ width: 100, height: 150 }}
-              source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
-              autoPlay
-              loop
-            />
-            <Text
-              style={{
-                fontSize: 28,
-                color: "rgb(255, 255, 255)",
-                fontFamily: "Poppins-Medium",
-                textAlign: "center",
-                marginTop: -5,
-                marginLeft: 20,
-              }}
-            >
-              Loading...
-            </Text>
-          </View>
-        </View>
-      )}
+
       {showSolveDialogue && (
         <View
           style={[
