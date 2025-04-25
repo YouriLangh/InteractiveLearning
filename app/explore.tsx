@@ -1,16 +1,27 @@
 import React, { useState, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
-import { Skia, PaintStyle } from "@shopify/react-native-skia";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Vibration,
+  Animated,
+  Image,
+} from "react-native";
+import Sound from "react-native-sound";
 import RNFS from "react-native-fs";
-import axios, { AxiosError } from "axios";
-import { useRouter } from 'expo-router';
+import axios from "axios";
+import { useRouter } from "expo-router";
 import {
   Camera,
   useCameraDevice,
   useCameraPermission,
 } from "react-native-vision-camera";
+import HapticFeedback from "react-native-haptic-feedback";
 
+Sound.setCategory("Playback");
 
+const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
 
 export default function Explore() {
   const router = useRouter();
@@ -19,125 +30,293 @@ export default function Explore() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [showSolveDialogue, setShowSolveDialogue] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [isFrozen, setIsFrozen] = useState(false);
+  const [attemptMade, setAttemptMade] = useState(false);
+
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const [detectedDots, setDetectedDots] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
+  const triggerShake = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: -10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 6,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 0,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const vibrateFeedback = (type: "correct" | "wrong") => {
+    const pattern = type === "correct" ? [0, 300] : [0, 100, 100, 100];
+    Vibration.vibrate(pattern);
+    HapticFeedback.trigger(
+      type === "correct" ? "notificationSuccess" : "notificationError",
+      {
+        enableVibrateFallback: true,
+        ignoreAndroidSystemSettings: false,
+      }
+    );
+  };
 
   async function takeAndUploadSnapshot() {
+    setIsThinking(true);
     const snapshot = await camera.current?.takeSnapshot({ quality: 90 });
-    if (!snapshot?.path) return;
+    if (!snapshot?.path) return setIsThinking(false);
 
-    const fileUri = snapshot.path;
-    const fileType = "image/jpeg";
-
-    // Convert the image to base64
-    const base64Image = await RNFS.readFile(fileUri, "base64");
+    const base64Image = await RNFS.readFile(snapshot.path, "base64");
 
     try {
-      const response = await axios.post("http://192.168.129.9:5000/api/upload/solve", {
-        image: base64Image,
-        fileType: fileType,
-        answer: 12 
-      });
-      console.log("Solved?,", response.data.solved);
-      setShowSolveDialogue(response.data.solved)
+      const response = await axios.post(
+        "http://192.168.129.9:5000/api/upload/solve",
+        {
+          image: base64Image,
+          fileType: "image/jpeg",
+          answer: 12,
+        }
+      );
+      setDetectedDots(response.data.darkSpotCount);
+      const solved = response.data.solved;
       setImageBase64(response.data.processedImage);
-      console.log("Image uploaded successfully");
+      if (solved) {
+        setShowSolveDialogue(true);
+        vibrateFeedback("correct");
+        correctSound.play();
+        setIsFrozen(true); // freeze the camera
+
+        setTimeout(() => {
+          setShowSolveDialogue(false);
+          setIsFrozen(false);
+          console.log("Navigating to next screen");
+        }, 1500);
+      } else {
+        vibrateFeedback("wrong");
+        triggerShake();
+        setIsFrozen(true);
+        setShowPreview(true);
+        setAttemptMade(true); // Mark that an attempt has been made
+      }
     } catch (error) {
-      console.error("Error uploading image", error);
+      console.error("Upload failed:", error);
     }
+    setIsThinking(false);
   }
 
-  function handleDialogueClick() {
-    setShowSolveDialogue(false);
-    setImageBase64(null);
-    console.log("Redirecting...")
-    router.replace("/student/StudentExerciseList");
-  }
-  if (device == null || !hasPermission)
+  if (device == null || !hasPermission) {
     return (
       <Text style={StyleSheet.absoluteFill} onPress={requestPermission}>
         Give Permission
       </Text>
     );
+  }
 
   return (
-    <View style={StyleSheet.absoluteFill}>
-      {imageBase64 && !showSolveDialogue &&
-        <Image
-          source={{ uri: `data:image/png;base64,${imageBase64}` }}
-          style={StyleSheet.absoluteFill}
-          resizeMode="contain"
-        />}
-
-{showSolveDialogue && <View style={styles.dialogue}>
-      <Text style={{ color: "white", fontSize: 20 }}>
-       Exercise Solved!
-      </Text>
-      <TouchableOpacity
-        onPress={() => handleDialogueClick() }
-        style={{
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          padding: 15,
-        }}
-      >
-        <Text style={{ color: "white" }}>Close</Text>
-      </TouchableOpacity>
-    </View> 
-}
-      {!imageBase64 && <Camera
-        style={StyleSheet.absoluteFill}
-        device={device}
-        isActive={true}
-        photo={true}
-        ref={camera}
-        photoQualityBalance="speed"
-        resizeMode="contain"
-        outputOrientation="device"
-        enableFpsGraph={true}
-      />}
-      <TouchableOpacity
-        style={{
-          width: 100,
-          height: 50,
-          zIndex: 10, // Ensure button is on top of Camera
-          position: "absolute",
-          right: 0,
-          bottom: 50,
-          backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional background for visibility
-          justifyContent: "center",
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        {
           alignItems: "center",
-        }}
-        onPress={takeAndUploadSnapshot}
+          paddingTop: "10%",
+          backgroundColor: "#FBF2E5",
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.cameraContainer,
+          {
+            transform: [{ translateX: shakeAnim }],
+            borderColor: showPreview ? "#C80909" : "gray",
+            borderWidth: showPreview ? 5 : 2,
+          },
+        ]}
       >
-        <Text style={{ color: "white", }}>Take image</Text>
-      </TouchableOpacity>
+        <Camera
+          style={[StyleSheet.absoluteFill]}
+          device={device}
+          isActive={!isFrozen}
+          photo={true}
+          ref={camera}
+          photoQualityBalance="speed"
+          resizeMode="contain"
+          outputOrientation="device"
+          enableFpsGraph={false}
+        />
+        {imageBase64 && showPreview && (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 20,
+              },
+            ]}
+          >
+            <Image
+              source={{ uri: `data:image/png;base64,${imageBase64}` }}
+              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+              resizeMode="cover"
+            />
+            <Text style={styles.wrongText}>
+              We see {detectedDots}, but the exercise required 12
+            </Text>
+          </View>
+        )}
+      </Animated.View>
+
+      {/* Thinking Indicator */}
+      {isThinking && (
+        <View style={styles.thinkingOverlay}>
+          <Text style={{ fontSize: 22, color: "white" }}>Thinking...</Text>
+        </View>
+      )}
+
+      {/* Buttons */}
+      <View style={styles.buttonsContainer}>
+        <TouchableOpacity
+          style={[
+            styles.captureButton,
+            { backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881" },
+          ]}
+          onPress={() => {
+            if (attemptMade && showPreview && !isThinking) {
+              // Reset the camera and preview state for a new attempt
+              setShowPreview(false);
+              setIsFrozen(false);
+              setAttemptMade(false); // Reset attempt
+            } else {
+              // Proceed with the first attempt
+              takeAndUploadSnapshot();
+            }
+          }}
+        >
+          <Image
+            style={{
+              width: attemptMade ? 24 : 32,
+              height: attemptMade ? 24 : 32,
+              marginHorizontal: 24,
+            }}
+            source={
+              attemptMade
+                ? require("@/assets/images/close.png")
+                : require("@/assets/images/check.png")
+            }
+          />
+          <Text
+            style={{
+              color: "white",
+              fontSize: 28,
+              fontFamily: "Poppins-Regular",
+            }}
+          >
+            {attemptMade ? "Try Again" : "Try it!"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      {showSolveDialogue && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(0, 0, 0, 0.3)", zIndex: 20 },
+          ]}
+        >
+          <View style={styles.dialogue}>
+            <Text
+              style={{
+                color: "#1D4106",
+                fontSize: 32,
+                fontFamily: "Poppins-Bold",
+              }}
+            >
+              Exercise Solved!
+            </Text>
+            <Image
+              style={{ marginTop: 40 }}
+              source={require("@/assets/images/MascotThumbsUp.png")}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  preview: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 500,
-    height: 500,
-    borderWidth: 1,
-    borderColor: "white",
-    zIndex: 20,
+  cameraContainer: {
+    width: "70%",
+    height: "70%",
+    borderRadius: 5,
+    overflow: "hidden",
+  },
+  wrongText: {
+    fontFamily: "Poppins-SemiBold",
+    zIndex: 10,
+    color: "rgba(186, 4, 4, 100)",
+    fontSize: 24,
+  },
+  closeButton: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+    backgroundColor: "rgb(233, 99, 99)",
+    paddingVertical: 15,
+    paddingRight: 40,
+    borderRadius: 15,
+  },
+  buttonsContainer: {
+    marginTop: 40,
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "40%",
+  },
+  captureButton: {
+    paddingRight: 40,
+    height: 80,
+    zIndex: 10,
+    borderRadius: 10,
+    display: "flex",
+    flexDirection: "row",
+    backgroundColor: "#99D881",
+    alignItems: "center",
   },
   dialogue: {
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    padding: 50,
-    justifyContent: "space-between",
+    borderRadius: 10,
+    justifyContent: "center",
     position: "absolute",
     left: "50%",
     top: "50%",
-    transform: [
-      { translateX: '-50%' },
-      { translateY: '-50%' },],
-    width: 500,
-    height: 300,
-    backgroundColor: "rgb(36, 184, 85)",
+    transform: [{ translateX: "-50%" }, { translateY: "-50%" }],
+    paddingHorizontal: 90,
+    paddingVertical: 40,
+    backgroundColor: "#A2FEAD",
     zIndex: 20,
+  },
+  thinkingOverlay: {
+    position: "absolute",
+    top: "40%",
+    zIndex: 30,
+    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 8,
   },
 });

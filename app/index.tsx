@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,32 +7,38 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import BackgroundWrapper from '@/app/components/BackgroundWrapper'; 
+} from "react-native";
+import { useRouter } from "expo-router";
+import BackgroundWrapper from "@/app/components/BackgroundWrapper";
+import { useFonts } from "expo-font";
 
-
-const { width } = Dimensions.get('window');
-
+const { width } = Dimensions.get("window");
 
 export default function Index() {
   const router = useRouter();
-
+  const [fontsLoaded] = useFonts({
+    "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
+    "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
+  });
   return (
     <BackgroundWrapper>
       <SafeAreaView style={styles.innerContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/explore')}>
-        <Text style={styles.buttonText}>Explore</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("/explore")}
+        >
+          <Text style={styles.buttonText}>Explore</Text>
+        </TouchableOpacity>
 
-        <Text style={styles.title}>Welcome!{'\n'}Login as:</Text>
+        <Text style={styles.title}>Welcome!{"\n"}Login as:</Text>
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push('/auth/LoginScreen?role=student')}>
+            onPress={() => router.push("/auth/LoginScreen?role=student")}
+          >
             <Image
-              source={require('@/assets/images/student-icon.png')}
+              source={require("@/assets/images/student-icon.png")}
               style={styles.icon}
             />
             <Text style={styles.buttonText}>Student</Text>
@@ -40,9 +46,10 @@ export default function Index() {
 
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push('/auth/LoginScreen?role=teacher')}>
+            onPress={() => router.push("/auth/LoginScreen?role=teacher")}
+          >
             <Image
-              source={require('@/assets/images/teacher-icon.png')}
+              source={require("@/assets/images/teacher-icon.png")}
               style={styles.icon}
             />
             <Text style={styles.buttonText}>Teacher</Text>
@@ -51,7 +58,8 @@ export default function Index() {
 
         <TouchableOpacity
           style={styles.signupButton}
-          onPress={() => router.push('/auth/SignupScreen')}>
+          onPress={() => router.push("/auth/SignupScreen")}
+        >
           <Text style={styles.signupText}>Sign Up</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -62,29 +70,29 @@ export default function Index() {
 const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 20,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: 'black',
+    fontWeight: "bold",
+    color: "black",
     marginBottom: 30,
-    textAlign: 'center',
+    textAlign: "center",
   },
   buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#66CE7D',
+    backgroundColor: "#66CE7D",
     padding: 15,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     width: width * 0.4,
   },
   icon: {
@@ -93,20 +101,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   signupButton: {
     marginTop: 10,
-    backgroundColor: '#DADADA',
+    backgroundColor: "#DADADA",
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
   },
   signupText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
