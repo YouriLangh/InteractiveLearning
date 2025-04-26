@@ -5,7 +5,7 @@ import { generateToken } from '../utils/jwt';
 
 const prisma = new PrismaClient();
 
-export const signup = async (req: Request, res: Response): Promise<Response> => {
+export const signup = async (req: Request, res: Response): Promise<Response | void> => {
     const { name, email, password, role } = req.body;
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return res.status(400).json({ error: 'Email in use' });
@@ -15,10 +15,10 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
     data: { name, email, passwordHash, role },
   });
 
-  res.json({ message: 'User created' });
+  return res.json({ message: 'User created' });
 };
 
-export const login = async (req: Request, res: Response): Promise<Response> =>{
+export const login = async (req: Request, res: Response): Promise<Response | void> => {
   const { email, password } = req.body;
   const user = await prisma.user.findUnique({ where: { email } });
 
@@ -27,5 +27,5 @@ export const login = async (req: Request, res: Response): Promise<Response> =>{
   }
 
   const token = generateToken({ id: user.id, role: user.role });
-  res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+  return res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
 };
