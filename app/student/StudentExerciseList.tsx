@@ -163,7 +163,7 @@ export default function ChaptersScreen() {
               {
                 borderColor: "#D16413",
                 backgroundColor: "#FF8B45",
-                height: "12%",
+                height: "20%",
               },
             ]}
           ></View>
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   mascot: {
     position: "absolute",
-    top: "10%",
+    top: "18%",
     zIndex: 1,
     width: 50,
     height: 50,
