@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, Image, TouchableOpacity, Dimensions, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Modal,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-const mascotSize = width < 400 ? 32 : width < 600 ? 40 : 48;
-const iconSize = width < 400 ? 24 : 28;
+const mascotSize = width < 400 ? 32 : width < 600 ? 40 : 55;
+const iconSize = width < 400 ? 24 : 32;
 
 export default function NavigationBar() {
   const router = useRouter();
@@ -22,21 +30,24 @@ export default function NavigationBar() {
     <View style={styles.navbarWrapper}>
       {/* Background Cubes */}
       <Image
-        source={require('@/assets/images/cube.png')}
-        style={styles.bgTopRight}
+        source={require("@/assets/images/Cube Asset.png")}
+        style={styles.navCenterCube}
       />
       <Image
-        source={require('@/assets/images/cubegroup.png')}
-        style={styles.bgFloatingCubes}
+        source={require("@/assets/images/NavCubes.png")}
+        style={styles.navCubeGroup}
       />
 
       {/* Navbar Content */}
       <View style={styles.navbar}>
         {/* Left Section */}
         <View style={styles.leftSection}>
-          <TouchableOpacity style={styles.homeButton} onPress={() => router.push('/')}>
+          <TouchableOpacity
+            style={styles.homeButton}
+            onPress={() => router.push("/")}
+          >
             <Image
-              source={require('@/assets/images/home.png')}
+              source={require("@/assets/images/home.png")}
               style={[styles.icon, { width: iconSize, height: iconSize }]}
             />
           </TouchableOpacity>
@@ -45,24 +56,28 @@ export default function NavigationBar() {
         {/* Center Mascot + Text (side-by-side) */}
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/mascott_tr.png')}
+            source={require("@/assets/images/Mascot.png")}
             style={[styles.mascot, { width: mascotSize, height: mascotSize }]}
           />
           <Text style={styles.centerText}>
-            <Text style={styles.textOrange}>Block</Text>
-            <Text style={styles.textGreen}>Ed</Text>
+            <Text style={[styles.textOrange, { fontFamily: "Poppins-Bold" }]}>
+              Block
+            </Text>
+            <Text style={[styles.textGreen, { fontFamily: "Poppins-Bold" }]}>
+              Ed
+            </Text>
           </Text>
         </View>
 
         {/* Right Section */}
         <View style={styles.rightSection}>
           {user && (
-            <TouchableOpacity 
-              style={styles.avatarButton} 
+            <TouchableOpacity
+              style={styles.avatarButton}
               onPress={() => setShowDropdown(!showDropdown)}
             >
               <Image
-                source={require('@/assets/images/avatar.png')}
+                source={require("@/assets/images/avatar.png")}
                 style={[styles.avatar, { width: iconSize, height: iconSize }]}
               />
             </TouchableOpacity>
@@ -77,13 +92,13 @@ export default function NavigationBar() {
         animationType="fade"
         onRequestClose={() => setShowDropdown(false)}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setShowDropdown(false)}
         >
           <View style={styles.dropdownMenu}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dropdownItem}
               onPress={handleLogout}
             >
@@ -98,27 +113,30 @@ export default function NavigationBar() {
 
 const styles = StyleSheet.create({
   navbarWrapper: {
-    position: 'relative',
-    backgroundColor: '#fff7ec',
-    width: '100%',
-    paddingTop: 9,
-    paddingBottom: 5,
+    position: "relative",
+    backgroundColor: "#fff7ec",
+    width: "100%",
+    height: 60,
+    alignContent: "center",
+    justifyContent: "center",
+    // borderColor: "red",
+    // borderWidth: 1,
   },
   navbar: {
-    width: '100%',
+    width: "100%",
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     zIndex: 2,
   },
   leftSection: {
     width: iconSize,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   rightSection: {
     width: iconSize,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   homeButton: {
     zIndex: 10,
@@ -128,67 +146,70 @@ const styles = StyleSheet.create({
   },
   avatar: {
     borderRadius: 20,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   icon: {
-    resizeMode: 'contain',
-    tintColor: '#3f7920',
+    resizeMode: "contain",
+    tintColor: "#3f7920",
   },
   logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   mascot: {
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   centerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 26,
+    fontWeight: "bold",
   },
   textOrange: {
-    color: '#e47920',
+    color: "#e47920",
   },
   textGreen: {
-    color: '#3f7920',
+    color: "#3f7920",
   },
   bgTopRight: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     width: width * 0.3,
     height: 80,
-    resizeMode: 'contain',
+    resizeMode: "contain",
     opacity: 0.4,
     zIndex: 0,
   },
-  bgFloatingCubes: {
-    position: 'absolute',
+  navCenterCube: {
+    position: "absolute",
     top: 0,
-    right: width * 0.2,
-    width: 120,
+    left: "50%",
+    width: 60,
     height: 60,
-    resizeMode: 'contain',
-    opacity: 0.2,
-    zIndex: 0,
+  },
+  navCubeGroup: {
+    position: "absolute",
+    top: -20,
+    right: 0,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-start",
     paddingTop: 60,
   },
   dropdownMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 60,
     right: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 8,
     padding: 8,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -199,7 +220,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dropdownText: {
-    color: '#333',
+    color: "#333",
     fontSize: 16,
   },
 });

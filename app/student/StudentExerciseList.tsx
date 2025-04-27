@@ -127,112 +127,108 @@ export default function ChaptersScreen() {
   };
 
   return (
-    <BackgroundWrapper>
-      <View style={styles.rootContainer}>
-        <ReturnButton />
+    <BackgroundWrapper nav={true}>
+      <View
+        style={[
+          styles.contentWrapper,
+          isLandscape ? styles.landscape : styles.portrait,
+        ]}
+      >
         <View
           style={[
-            styles.contentWrapper,
-            isLandscape ? styles.landscape : styles.portrait,
+            styles.progressBarContainer,
+            isLandscape
+              ? styles.progressBarVertical
+              : styles.progressBarHorizontal,
           ]}
+          onLayout={handleProgressBarLayout}
         >
           <View
             style={[
-              styles.progressBarContainer,
-              isLandscape
-                ? styles.progressBarVertical
-                : styles.progressBarHorizontal,
+              styles.progressLine,
+              isLandscape ? styles.lineVertical : styles.lineHorizontal,
             ]}
-            onLayout={handleProgressBarLayout}
-          >
-            <View
-              style={[
-                styles.progressLine,
-                isLandscape ? styles.lineVertical : styles.lineHorizontal,
-              ]}
-            />
+          />
 
-            <Image
-              source={require("@/assets/images/mascott_tr.png")}
-              style={[
-                styles.mascot,
-                isLandscape
-                  ? { top: progress * progressBarDimension - MASCOT_SIZE / 2 }
-                  : { left: progress * progressBarDimension - MASCOT_SIZE / 2 },
-              ]}
-            />
-          </View>
-
-          <ScrollView
-            style={styles.chaptersScroll}
-            contentContainerStyle={styles.chaptersContent}
-          >
-            {chaptersData.map((chapter) => {
-              const isExpanded = expandedChapters[chapter.id] ?? false;
-              return (
-                <View key={chapter.id} style={styles.chapterBlock}>
-                  <TouchableOpacity
-                    style={[
-                      styles.chapterHeader,
-                      isExpanded && styles.chapterHeaderExpanded,
-                    ]}
-                    onPress={() => toggleChapter(chapter.id)}
-                  >
-                    <Text style={styles.chapterTitle}>{chapter.title}</Text>
-
-                    <Image
-                      source={
-                        isExpanded
-                          ? require("@/assets/images/arrow-up.png")
-                          : require("@/assets/images/arrow-down.png")
-                      }
-                      style={styles.arrowIcon}
-                    />
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <View style={styles.exercisesContainer}>
-                      {chapter.exercises.map((exercise, index) => {
-                        const isFirstExercise = index === 0;
-                        return (
-                          <TouchableOpacity
-                            key={exercise.id}
-                            style={[
-                              styles.exerciseRow,
-                              isFirstExercise && styles.highlightedExercise,
-                            ]}
-                            onPress={() => {
-                              router.push(`/student/StudentLearnScreen`);
-                            }}
-                          >
-                            <Text
-                              style={[
-                                styles.exerciseText,
-                                isFirstExercise &&
-                                  styles.highlightedExerciseText,
-                              ]}
-                            >
-                              {exercise.name}
-                            </Text>
-                            <View style={styles.starsWrapper}>
-                              {Array.from({ length: exercise.stars }).map(
-                                (_, i) => (
-                                  <Text key={i} style={styles.star}>
-                                    ⭐
-                                  </Text>
-                                )
-                              )}
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
+          <Image
+            source={require("@/assets/images/mascott_tr.png")}
+            style={[
+              styles.mascot,
+              isLandscape
+                ? { top: progress * progressBarDimension - MASCOT_SIZE / 2 }
+                : { left: progress * progressBarDimension - MASCOT_SIZE / 2 },
+            ]}
+          />
         </View>
+
+        <ScrollView
+          style={styles.chaptersScroll}
+          contentContainerStyle={styles.chaptersContent}
+        >
+          {chaptersData.map((chapter) => {
+            const isExpanded = expandedChapters[chapter.id] ?? false;
+            return (
+              <View key={chapter.id} style={styles.chapterBlock}>
+                <TouchableOpacity
+                  style={[
+                    styles.chapterHeader,
+                    isExpanded && styles.chapterHeaderExpanded,
+                  ]}
+                  onPress={() => toggleChapter(chapter.id)}
+                >
+                  <Text style={styles.chapterTitle}>{chapter.title}</Text>
+
+                  <Image
+                    source={
+                      isExpanded
+                        ? require("@/assets/images/arrow-up.png")
+                        : require("@/assets/images/arrow-down.png")
+                    }
+                    style={styles.arrowIcon}
+                  />
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.exercisesContainer}>
+                    {chapter.exercises.map((exercise, index) => {
+                      const isFirstExercise = index === 0;
+                      return (
+                        <TouchableOpacity
+                          key={exercise.id}
+                          style={[
+                            styles.exerciseRow,
+                            isFirstExercise && styles.highlightedExercise,
+                          ]}
+                          onPress={() => {
+                            router.push(`/student/StudentLearnScreen`);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.exerciseText,
+                              isFirstExercise && styles.highlightedExerciseText,
+                            ]}
+                          >
+                            {exercise.name}
+                          </Text>
+                          <View style={styles.starsWrapper}>
+                            {Array.from({ length: exercise.stars }).map(
+                              (_, i) => (
+                                <Text key={i} style={styles.star}>
+                                  ⭐
+                                </Text>
+                              )
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
       </View>
     </BackgroundWrapper>
   );

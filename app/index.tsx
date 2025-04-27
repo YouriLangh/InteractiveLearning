@@ -21,7 +21,7 @@ export default function Index() {
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
   });
   return (
-    <BackgroundWrapper>
+    <BackgroundWrapper nav={false}>
       <SafeAreaView style={styles.innerContainer}>
         <Text style={styles.title}>Welcome!{"\n"}Login as:</Text>
 
