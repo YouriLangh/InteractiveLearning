@@ -34,9 +34,9 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 101,
-        name: "Build the number 21 with blocks.",
+        name: "Build the number 17 with blocks.",
         stars: 2,
-        answer: 21,
+        answer: 17,
       },
       {
         id: 102,

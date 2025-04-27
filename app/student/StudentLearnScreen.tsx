@@ -142,7 +142,9 @@ export default function StudentLearnScreen() {
           setTimeout(() => {
             setShowSolveDialogue(false);
             setIsFrozen(false);
-            console.log("Navigating to next screen");
+            router.push({
+              pathname: "/student/StudentExerciseList",
+            });
           }, 1500);
         } else {
           vibrateFeedback("wrong");
