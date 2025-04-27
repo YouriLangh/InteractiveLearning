@@ -68,3 +68,5 @@ backend_blocked/yarn-debug.log*
 backend_blocked/yarn-error.log*
 backend_blocked/yarn-debug.log
 backend_blocked/yarn-error.log
+
+app.json
