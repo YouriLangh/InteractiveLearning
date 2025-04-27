@@ -1,84 +1,66 @@
 import cv2
-import sys
 import numpy as np
-import base64
+import matplotlib.pyplot as plt
 import json
+import base64
+import sys
 
-# Get image path
+# Load the image
 image_path = sys.argv[1]
-
-# Load image
 image = cv2.imread(image_path)
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# Store original dimensions
+# Convert to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 orig_h, orig_w = gray.shape
 
-# Largest reference resolution (e.g., from phone image)
-REF_WIDTH = 4000
-REF_HEIGHT = 3000
-REF_AREA = 200  # Required area of circles in pixels
-REF_PADDING = 100 # Padding around detected objects
+# Slight blur to reduce noise
+blurred = cv2.GaussianBlur(gray, (7, 7), 0)
 
-# Calculate scale ratio (current image area / reference area)
-scale_ratio = (orig_w * orig_h) / (REF_WIDTH * REF_HEIGHT)
-min_area = int(REF_AREA * scale_ratio)
-PADDING = int(REF_PADDING * np.sqrt(scale_ratio))
+# Adaptive threshold for better separation regardless of lighting
+adaptive_thresh = cv2.adaptiveThreshold(
+    blurred,
+    255,
+    cv2.ADAPTIVE_THRESH_MEAN_C,
+    cv2.THRESH_BINARY_INV,
+    blockSize=21,  # Block size for local thresholding
+    C=10  # Constant subtracted from mean
+)
 
-# Resize grayscale image for faster processing
-gray_small = cv2.resize(gray, (orig_w // 2, orig_h // 2))
-resized_h, resized_w = gray_small.shape
-
-# Scale factor from resized back to original
-scale_x = orig_w / resized_w
-scale_y = orig_h / resized_h
-
-# Preprocessing: enhance contrast and reduce noise
-equalized = cv2.equalizeHist(gray_small)
-blurred = cv2.GaussianBlur(equalized, (5, 5), 0)
-
-# Threshold to isolate dark dots
-_, dark_mask = cv2.threshold(blurred, 40, 255, cv2.THRESH_BINARY_INV)
-
-# Morphological cleanup
+# Morphological operations to clean small noise
 kernel = np.ones((3, 3), np.uint8)
-cleaned_mask = cv2.morphologyEx(dark_mask, cv2.MORPH_OPEN, kernel)
+opened = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_OPEN, kernel, iterations=2)
 
 # Find contours
-contours, _ = cv2.findContours(cleaned_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# Convert for RGB display, only needed for tests
-# output_image_rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
 output_image_bgr = image.copy()
 
+# Padding (in pixels)
+PADDING = 20  # Adjusted based on actual image resolution
+
 ctr = 0
-# Loop through contours and draw bounding boxes
+# Loop through contours
 for cnt in contours:
     area = cv2.contourArea(cnt)
     perimeter = cv2.arcLength(cnt, True)
 
-    if area < min_area or perimeter == 0:
+    # Filtering based on area and circularity
+    if area < 60  or perimeter == 0:
         continue
 
-    circularity = 4 * np.pi * (area / (perimeter ** 2)) # Source: https://stackoverflow.com/questions/74580811/circularity-calculation-with-perimeter-area-of-a-simple-circle
-    if 0.7 < circularity <= 1.5:
-        ctr += 1
+    circularity = 4 * np.pi * (area / (perimeter ** 2))
+    if 0.5 < circularity <= 1.5:  # Slightly wider range to catch ovals too
         x, y, w, h = cv2.boundingRect(cnt)
-        x = int(x * scale_x)
-        y = int(y * scale_y)
-        w = int(w * scale_x)
-        h = int(h * scale_y)
-
-        # Apply scaled padding
         x_pad = max(0, x - PADDING)
         y_pad = max(0, y - PADDING)
         w_pad = min(orig_w, x + w + PADDING)
         h_pad = min(orig_h, y + h + PADDING)
 
-        cv2.rectangle(output_image_bgr, (x_pad, y_pad), (w_pad, h_pad), (255, 255, 255), 10)
+        cv2.rectangle(output_image_bgr, (x_pad, y_pad), (w_pad, h_pad), (255, 255, 255), 8)
+        ctr += 1
 
-# Encoded output image as base64
-_, buffer = cv2.imencode('.png', output_image_bgr)
+# Encode output image
+_, buffer = cv2.imencode('.jpeg', output_image_bgr)
 img_base64 = base64.b64encode(buffer).decode('utf-8')
 
 # Output JSON

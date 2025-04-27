@@ -31,6 +31,13 @@ export default function StudentLearnScreen() {
     useLocalSearchParams();
   const router = useRouter();
   const device = useCameraDevice("back");
+  const formats = device?.formats;
+  // const bestFormat = formats?.find(
+  //   (format) => format.photoWidth === 3264 && format.photoHeight === 2448
+  // );
+  const bestFormat = formats?.find(
+    (format) => format.photoWidth === 1280 && format.photoHeight === 960
+  );
   const camera = useRef<Camera>(null);
   const { hasPermission, requestPermission } = useCameraPermission();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -107,10 +114,10 @@ export default function StudentLearnScreen() {
 
   async function takeAndUploadSnapshot() {
     setisLoading(true);
-    const snapshot = await camera.current?.takeSnapshot({ quality: 90 });
-    if (!snapshot?.path) return setisLoading(false);
+    const photo = await camera.current?.takePhoto();
+    if (!photo?.path) return setisLoading(false);
 
-    const base64Image = await RNFS.readFile(snapshot.path, "base64");
+    const base64Image = await RNFS.readFile(photo.path, "base64");
 
     try {
       const response = await axios.post(
@@ -199,8 +206,9 @@ export default function StudentLearnScreen() {
             isActive={!isFrozen}
             photo={true}
             ref={camera}
+            format={bestFormat ?? undefined}
             photoQualityBalance="speed"
-            resizeMode="cover"
+            resizeMode="contain"
             outputOrientation="device"
             enableFpsGraph={false}
           />
@@ -218,7 +226,7 @@ export default function StudentLearnScreen() {
               <Image
                 source={{ uri: `data:image/png;base64,${imageBase64}` }}
                 style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
-                resizeMode="cover"
+                resizeMode="contain"
               />
               <Text style={styles.wrongText}>
                 We see {detectedDots}, but the exercise required 12
@@ -349,7 +357,7 @@ export default function StudentLearnScreen() {
 
 const styles = StyleSheet.create({
   cameraContainer: {
-    width: "70%",
+    width: "65%",
     height: "60%",
     borderRadius: 5,
     overflow: "hidden",
