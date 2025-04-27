@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
   Vibration,
   Animated,
   Image,
@@ -67,6 +68,32 @@ export default function StudentLearnScreen() {
     ]).start();
   };
 
+  const dialogueShakeAnim = useRef(new Animated.Value(0)).current;
+  const triggerDialogueShake = () => {
+    Animated.sequence([
+      Animated.timing(dialogueShakeAnim, {
+        toValue: 10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dialogueShakeAnim, {
+        toValue: -10,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dialogueShakeAnim, {
+        toValue: 6,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dialogueShakeAnim, {
+        toValue: 0,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const vibrateFeedback = (type: "correct" | "wrong") => {
     const pattern = type === "correct" ? [0, 300] : [0, 100, 100, 100];
     Vibration.vibrate(pattern);
@@ -102,10 +129,10 @@ export default function StudentLearnScreen() {
       setTimeout(() => {
         if (solved) {
           setShowSolveDialogue(true);
+          triggerDialogueShake;
           vibrateFeedback("correct");
           correctSound.play();
           setIsFrozen(true); // freeze the camera
-
           setTimeout(() => {
             setShowSolveDialogue(false);
             setIsFrozen(false);
@@ -135,164 +162,196 @@ export default function StudentLearnScreen() {
 
   return (
     <BackgroundWrapper nav={true}>
-      <Text>
-        Chapter {chapterId}: Exercise {exerciseNr}
-      </Text>
-      <Text>{name}</Text>
-      <Animated.View
-        style={[
-          styles.cameraContainer,
-          {
-            transform: [{ translateX: shakeAnim }],
-            borderColor: showPreview ? "#C80909" : "gray",
-            borderWidth: showPreview ? 5 : 2,
-          },
-        ]}
-      >
-        <Camera
-          style={[StyleSheet.absoluteFill]}
-          device={device}
-          isActive={!isFrozen}
-          photo={true}
-          ref={camera}
-          photoQualityBalance="speed"
-          resizeMode="contain"
-          outputOrientation="device"
-          enableFpsGraph={false}
-        />
-        {imageBase64 && showPreview && (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 20,
-              },
-            ]}
-          >
-            <Image
-              source={{ uri: `data:image/png;base64,${imageBase64}` }}
-              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
-              resizeMode="cover"
-            />
-            <Text style={styles.wrongText}>
-              We see {detectedDots}, but the exercise required 12
-            </Text>
-          </View>
-        )}
-        {/* Loading Indicator */}
-        {isLoading && (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: "rgba(29, 29, 29, 0.75)",
-                zIndex: 30,
-                alignItems: "center",
-                justifyContent: "center",
-              },
-            ]}
-          >
-            <View style={styles.loadingOverlay}>
-              <LottieView
-                style={{ width: 100, height: 150 }}
-                source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
-                autoPlay
-                loop
-              />
-              <Text
-                style={{
-                  fontSize: 28,
-                  color: "rgb(255, 255, 255)",
-                  fontFamily: "Poppins-Medium",
-                  textAlign: "center",
-                  marginTop: -5,
-                  marginLeft: 20,
-                }}
-              >
-                Loading...
-              </Text>
-            </View>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* Buttons */}
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          style={[
-            styles.captureButton,
-            { backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881" },
-          ]}
-          onPress={() => {
-            if (attemptMade && showPreview && !isLoading) {
-              // Reset the camera and preview state for a new attempt
-              setShowPreview(false);
-              setIsFrozen(false);
-              setAttemptMade(false); // Reset attempt
-            } else {
-              // Proceed with the first attempt
-              takeAndUploadSnapshot();
-            }
+      <View style={{ flex: 1, alignItems: "center", paddingTop: 30 }}>
+        <Text
+          style={{
+            fontSize: 26,
+            fontFamily: "Poppins-Bold",
+            marginBottom: 20,
+            width: "85%",
+            lineHeight: 32, // Add line height for better spacing
+            letterSpacing: 1, // Add letter spacing for more readability
           }}
         >
-          <Image
-            style={{
-              width: attemptMade ? 24 : 32,
-              height: attemptMade ? 24 : 32,
-              marginHorizontal: 24,
-            }}
-            source={
-              attemptMade
-                ? require("@/assets/images/close.png")
-                : require("@/assets/images/check.png")
-            }
-          />
-          <Text
-            style={{
-              color: "white",
-              fontSize: 28,
-              fontFamily: "Poppins-Regular",
-            }}
-          >
-            {attemptMade ? "Try Again" : "Try it!"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {showSolveDialogue && (
-        <View
+          Chapter {chapterId}: Exercise {exerciseNr}
+        </Text>
+        <Text
+          style={{
+            fontSize: 24,
+            fontFamily: "Poppins-Regular",
+            marginBottom: 6,
+          }}
+        >
+          {name}
+        </Text>
+        <Animated.View
           style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: "rgba(0, 0, 0, 0.3)", zIndex: 20 },
+            styles.cameraContainer,
+            {
+              transform: [{ translateX: shakeAnim }],
+              borderColor: showPreview ? "#C80909" : "gray",
+              borderWidth: showPreview ? 5 : 0,
+            },
           ]}
         >
-          <View style={styles.dialogue}>
+          <Camera
+            style={[StyleSheet.absoluteFill]}
+            device={device}
+            isActive={!isFrozen}
+            photo={true}
+            ref={camera}
+            photoQualityBalance="speed"
+            resizeMode="contain"
+            outputOrientation="device"
+            enableFpsGraph={false}
+          />
+          {imageBase64 && showPreview && (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: 20,
+                },
+              ]}
+            >
+              <Image
+                source={{ uri: `data:image/png;base64,${imageBase64}` }}
+                style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+                resizeMode="cover"
+              />
+              <Text style={styles.wrongText}>
+                We see {detectedDots}, but the exercise required 12
+              </Text>
+            </View>
+          )}
+          {/* Loading Indicator */}
+          {isLoading && (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: "rgba(29, 29, 29, 0.75)",
+                  zIndex: 30,
+                  alignItems: "center",
+                  justifyContent: "center",
+                },
+              ]}
+            >
+              <View style={styles.loadingOverlay}>
+                <LottieView
+                  style={{ width: 100, height: 150 }}
+                  source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
+                  autoPlay
+                  loop
+                />
+                <Text
+                  style={{
+                    fontSize: 28,
+                    color: "rgb(255, 255, 255)",
+                    fontFamily: "Poppins-Medium",
+                    textAlign: "center",
+                    marginTop: -5,
+                    marginLeft: 20,
+                  }}
+                >
+                  Loading...
+                </Text>
+              </View>
+            </View>
+          )}
+        </Animated.View>
+
+        {/* Buttons */}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.captureButton,
+              { backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881" },
+            ]}
+            onPress={() => {
+              if (attemptMade && showPreview && !isLoading) {
+                // Reset the camera and preview state for a new attempt
+                setShowPreview(false);
+                setIsFrozen(false);
+                setAttemptMade(false); // Reset attempt
+              } else {
+                // Proceed with the first attempt
+                takeAndUploadSnapshot();
+              }
+            }}
+          >
+            <Image
+              style={{
+                width: attemptMade ? 24 : 32,
+                height: attemptMade ? 24 : 32,
+                marginHorizontal: 24,
+              }}
+              source={
+                attemptMade
+                  ? require("@/assets/images/close.png")
+                  : require("@/assets/images/check.png")
+              }
+            />
             <Text
               style={{
-                color: "#3F741D",
-                fontSize: 32,
-                fontFamily: "Poppins-Bold",
+                color: "white",
+                fontSize: 28,
+                fontFamily: "Poppins-Regular",
               }}
             >
-              Exercise Solved!
+              {attemptMade ? "Try Again" : "Try it!"}
             </Text>
-            <Image
-              style={{ marginTop: 30 }}
-              source={require("@/assets/images/MascotThumbsUp.png")}
-            />
-          </View>
+          </TouchableOpacity>
         </View>
-      )}
+
+        {showSolveDialogue && (
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={showSolveDialogue}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Animated.View
+                style={[
+                  styles.dialogue,
+                  { transform: [{ translateX: dialogueShakeAnim }] },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: "#3F741D",
+                    fontSize: 32,
+                    fontFamily: "Poppins-Bold",
+                  }}
+                >
+                  Exercise Solved!
+                </Text>
+                <Image
+                  style={{ marginTop: 16, position: "relative", left: -10 }}
+                  source={require("@/assets/images/MascotThumbsUp.png")}
+                />
+              </Animated.View>
+            </View>
+          </Modal>
+        )}
+      </View>
     </BackgroundWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   cameraContainer: {
-    width: "70%",
-    height: "70%",
+    width: "80%",
+    height: "60%",
     borderRadius: 5,
     overflow: "hidden",
   },
@@ -302,18 +361,8 @@ const styles = StyleSheet.create({
     color: "rgba(186, 4, 4, 100)",
     fontSize: 24,
   },
-  closeButton: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgb(233, 99, 99)",
-    paddingVertical: 15,
-    paddingRight: 40,
-    borderRadius: 15,
-  },
   buttonsContainer: {
-    marginTop: 40,
+    marginTop: 30,
     flexDirection: "row",
     justifyContent: "center",
     width: "40%",
@@ -334,12 +383,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 10,
     justifyContent: "center",
-    position: "absolute",
-    left: "50%",
-    top: "50%",
-    transform: [{ translateX: "-50%" }, { translateY: "-50%" }],
-    paddingHorizontal: 90,
-    paddingVertical: 40,
+    paddingHorizontal: 60,
+    paddingVertical: 30,
     backgroundColor: "#C0F5C6",
     zIndex: 20,
   },
