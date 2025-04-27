@@ -1,20 +1,38 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 import json
 import base64
 import sys
 
 # Load the image
 image_path = sys.argv[1]
+image_path = "uploaded_image.png"
 image = cv2.imread(image_path)
 
 # Convert to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 orig_h, orig_w = gray.shape
 
+# Base resolution (reference resolution where parameters work well)
+BASE_WIDTH = 1280
+BASE_HEIGHT = 960
+
+# Calculate scaling factors
+scale_w = orig_w / BASE_WIDTH
+scale_h = orig_h / BASE_HEIGHT
+scale_factor = (scale_w + scale_h) / 2  # Average scale
+
+# Scaled parameters
+PADDING = int(20 * scale_factor)
+MIN_AREA = 70 * (scale_factor ** 3)
+BLUR_KERNEL = int(7 * scale_factor)
+BLUR_KERNEL = BLUR_KERNEL if BLUR_KERNEL % 2 == 1 else BLUR_KERNEL + 1
+BLOCK_SIZE = int(21 * scale_factor)
+BLOCK_SIZE = BLOCK_SIZE if BLOCK_SIZE % 2 == 1 else BLOCK_SIZE + 1
+C_VALUE = 10  # Can be scaled too if needed, keeping it constant for now
+
 # Slight blur to reduce noise
-blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+blurred = cv2.GaussianBlur(gray, (BLUR_KERNEL, BLUR_KERNEL), 0)
 
 # Adaptive threshold for better separation regardless of lighting
 adaptive_thresh = cv2.adaptiveThreshold(
@@ -22,8 +40,8 @@ adaptive_thresh = cv2.adaptiveThreshold(
     255,
     cv2.ADAPTIVE_THRESH_MEAN_C,
     cv2.THRESH_BINARY_INV,
-    blockSize=21,  # Block size for local thresholding
-    C=10  # Constant subtracted from mean
+    blockSize=BLOCK_SIZE,
+    C=C_VALUE
 )
 
 # Morphological operations to clean small noise
@@ -35,9 +53,6 @@ contours, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPL
 
 output_image_bgr = image.copy()
 
-# Padding (in pixels)
-PADDING = 20  # Adjusted based on actual image resolution
-
 ctr = 0
 # Loop through contours
 for cnt in contours:
@@ -45,11 +60,11 @@ for cnt in contours:
     perimeter = cv2.arcLength(cnt, True)
 
     # Filtering based on area and circularity
-    if area < 60  or perimeter == 0:
+    if area < MIN_AREA or perimeter == 0:
         continue
 
     circularity = 4 * np.pi * (area / (perimeter ** 2))
-    if 0.5 < circularity <= 1.5:  # Slightly wider range to catch ovals too
+    if 0.5 < circularity <= 1.5:
         x, y, w, h = cv2.boundingRect(cnt)
         x_pad = max(0, x - PADDING)
         y_pad = max(0, y - PADDING)
@@ -69,5 +84,5 @@ result = {
     "count": ctr,
     "image": img_base64
 }
-
-print(json.dumps(result))
+json_result = json.dumps(result)
+print(json_result)
