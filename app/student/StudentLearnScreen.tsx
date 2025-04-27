@@ -19,12 +19,14 @@ import {
 } from "react-native-vision-camera";
 import HapticFeedback from "react-native-haptic-feedback";
 import LottieView from "lottie-react-native";
-
+import { useLocalSearchParams } from "expo-router";
 Sound.setCategory("Playback");
 
 const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
 
-export default function Explore() {
+export default function StudentLearnScreen() {
+  const { id, name, stars, answer } = useLocalSearchParams();
+  console.log(id, name, stars, answer); // You now have all exercise data!
   const router = useRouter();
   const device = useCameraDevice("back");
   const camera = useRef<Camera>(null);

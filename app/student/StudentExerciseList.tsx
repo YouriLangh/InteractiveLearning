@@ -7,7 +7,8 @@ import {
   ScrollView,
   useWindowDimensions,
   Image,
-  LayoutChangeEvent,
+  UIManager, // Import UIManager for Android support
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
@@ -17,6 +18,7 @@ interface Exercise {
   id: number;
   name: string;
   stars: number;
+  answer: number;
 }
 
 interface Chapter {
@@ -24,7 +26,6 @@ interface Chapter {
   title: string;
   exercises: Exercise[];
 }
-
 /* ====== Dummy Data ====== */
 const chaptersData: Chapter[] = [
   {
@@ -33,18 +34,21 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 101,
-        name: "Exercise 1: Make the number 21 using blocks.",
+        name: "Exercise 1: Build the number 21 with blocks.",
         stars: 2,
+        answer: 21,
       },
       {
         id: 102,
-        name: "Exercise 2: Make the number 35 using blocks.",
+        name: "Exercise 2: Build the number 35 with blocks.",
         stars: 5,
+        answer: 35,
       },
       {
         id: 103,
-        name: "Exercise 3: Make the number 215 using blocks.",
+        name: "Exercise 3: Build the number 215 with blocks.",
         stars: 3,
+        answer: 215,
       },
     ],
   },
@@ -54,13 +58,21 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 201,
-        name: "Exercise 1: Make the number 21 using blocks.",
+        name: "Exercise 1: What is 15 + 6?",
         stars: 0,
+        answer: 21,
       },
       {
         id: 202,
-        name: "Exercise 2: Make the number 35 using blocks.",
+        name: "Exercise 2: What is 20 + 15?",
         stars: 0,
+        answer: 35,
+      },
+      {
+        id: 203,
+        name: "Exercise 3: What is 120 + 95?",
+        stars: 0,
+        answer: 215,
       },
     ],
   },
@@ -69,14 +81,22 @@ const chaptersData: Chapter[] = [
     title: "Chapter 3: Subtraction",
     exercises: [
       {
-        id: 201,
-        name: "Exercise 1: Make the number 21 using blocks.",
+        id: 301,
+        name: "Exercise 1: What is 50 - 29?",
         stars: 0,
+        answer: 21,
       },
       {
-        id: 202,
-        name: "Exercise 2: Make the number 35 using blocks.",
+        id: 302,
+        name: "Exercise 2: What is 70 - 35?",
         stars: 0,
+        answer: 35,
+      },
+      {
+        id: 303,
+        name: "Exercise 3: What is 300 - 85?",
+        stars: 0,
+        answer: 215,
       },
     ],
   },
@@ -85,14 +105,22 @@ const chaptersData: Chapter[] = [
     title: "Chapter 4: Multiplication",
     exercises: [
       {
-        id: 201,
-        name: "Exercise 1: Make the number 21 using blocks.",
+        id: 401,
+        name: "Exercise 1: What is 3 × 7?",
         stars: 0,
+        answer: 21,
       },
       {
-        id: 202,
-        name: "Exercise 2: Make the number 35 using blocks.",
+        id: 402,
+        name: "Exercise 2: What is 5 × 7?",
         stars: 0,
+        answer: 35,
+      },
+      {
+        id: 403,
+        name: "Exercise 3: What is 43 × 5?",
+        stars: 0,
+        answer: 215,
       },
     ],
   },
@@ -105,7 +133,12 @@ export default function ChaptersScreen() {
 
   const [expandedChapters, setExpandedChapters] = useState<{
     [key: number]: boolean;
-  }>({});
+  }>({
+    1: true,
+    2: false,
+    3: false,
+    4: false,
+  });
 
   const toggleChapter = (chapterId: number) => {
     setExpandedChapters((prev) => ({
@@ -160,7 +193,7 @@ export default function ChaptersScreen() {
           {chaptersData.map((chapter) => {
             const isExpanded = expandedChapters[chapter.id] ?? true;
             return (
-              <>
+              <React.Fragment key={chapter.id}>
                 <View
                   style={{
                     flexDirection: "row",
@@ -169,10 +202,7 @@ export default function ChaptersScreen() {
                     marginBottom: 16,
                   }}
                 >
-                  <Text
-                    style={{ fontFamily: "Poppins-Bold", fontSize: 28 }}
-                    key={"title" + chapter.id}
-                  >
+                  <Text style={{ fontFamily: "Poppins-Bold", fontSize: 28 }}>
                     {chapter.title}
                   </Text>
                   <TouchableOpacity onPress={() => toggleChapter(chapter.id)}>
@@ -202,7 +232,15 @@ export default function ChaptersScreen() {
                               isFirstExercise && styles.highlightedExercise,
                             ]}
                             onPress={() => {
-                              router.push(`/student/StudentLearnScreen`);
+                              router.push({
+                                pathname: "/student/StudentLearnScreen",
+                                params: {
+                                  id: exercise.id.toString(),
+                                  name: exercise.name,
+                                  stars: exercise.stars.toString(),
+                                  answer: exercise.answer.toString(),
+                                },
+                              });
                             }}
                           >
                             <Text
@@ -214,17 +252,21 @@ export default function ChaptersScreen() {
                             >
                               {exercise.name}
                             </Text>
-                            <View style={styles.starsWrapper}>
+                            <View
+                              key={"Stars" + exercise.id}
+                              style={styles.starsWrapper}
+                            >
                               {Array.from({ length: exercise.stars }).map(
                                 (_, i) => (
                                   <Image
+                                    key={`star-${exercise.id}-${i}`}
                                     source={
                                       isFirstExercise
                                         ? require("@/assets/images/Star.png")
                                         : require("@/assets/images/GrayStar.png")
                                     }
                                     style={styles.star}
-                                  ></Image>
+                                  />
                                 )
                               )}
                             </View>
@@ -234,7 +276,7 @@ export default function ChaptersScreen() {
                     </View>
                   )}
                 </View>
-              </>
+              </React.Fragment>
             );
           })}
         </ScrollView>
