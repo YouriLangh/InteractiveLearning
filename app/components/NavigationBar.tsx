@@ -78,7 +78,7 @@ export default function NavigationBar() {
             >
               <Image
                 source={require("@/assets/images/avatar.png")}
-                style={[styles.avatar, { width: iconSize, height: iconSize }]}
+                style={{ width: 48, height: 48 }}
               />
             </TouchableOpacity>
           )}
@@ -119,8 +119,6 @@ const styles = StyleSheet.create({
     height: 60,
     alignContent: "center",
     justifyContent: "center",
-    // borderColor: "red",
-    // borderWidth: 1,
   },
   navbar: {
     width: "100%",
