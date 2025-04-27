@@ -34,19 +34,19 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 101,
-        name: "Exercise 1: Build the number 21 with blocks.",
+        name: "Build the number 21 with blocks.",
         stars: 2,
         answer: 21,
       },
       {
         id: 102,
-        name: "Exercise 2: Build the number 35 with blocks.",
+        name: "Build the number 35 with blocks.",
         stars: 5,
         answer: 35,
       },
       {
         id: 103,
-        name: "Exercise 3: Build the number 215 with blocks.",
+        name: "Build the number 215 with blocks.",
         stars: 3,
         answer: 215,
       },
@@ -58,19 +58,19 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 201,
-        name: "Exercise 1: What is 15 + 6?",
+        name: "What is 15 + 6?",
         stars: 0,
         answer: 21,
       },
       {
         id: 202,
-        name: "Exercise 2: What is 20 + 15?",
+        name: "What is 20 + 15?",
         stars: 0,
         answer: 35,
       },
       {
         id: 203,
-        name: "Exercise 3: What is 120 + 95?",
+        name: "What is 120 + 95?",
         stars: 0,
         answer: 215,
       },
@@ -82,19 +82,19 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 301,
-        name: "Exercise 1: What is 50 - 29?",
+        name: "What is 50 - 29?",
         stars: 0,
         answer: 21,
       },
       {
         id: 302,
-        name: "Exercise 2: What is 70 - 35?",
+        name: "What is 70 - 35?",
         stars: 0,
         answer: 35,
       },
       {
         id: 303,
-        name: "Exercise 3: What is 300 - 85?",
+        name: "What is 300 - 85?",
         stars: 0,
         answer: 215,
       },
@@ -106,19 +106,19 @@ const chaptersData: Chapter[] = [
     exercises: [
       {
         id: 401,
-        name: "Exercise 1: What is 3 × 7?",
+        name: "What is 3 × 7?",
         stars: 0,
         answer: 21,
       },
       {
         id: 402,
-        name: "Exercise 2: What is 5 × 7?",
+        name: "What is 5 × 7?",
         stars: 0,
         answer: 35,
       },
       {
         id: 403,
-        name: "Exercise 3: What is 43 × 5?",
+        name: "What is 43 × 5?",
         stars: 0,
         answer: 215,
       },
@@ -235,6 +235,8 @@ export default function ChaptersScreen() {
                               router.push({
                                 pathname: "/student/StudentLearnScreen",
                                 params: {
+                                  chapterId: chapter.id.toString(),
+                                  exerciseNr: (index + 1).toString(),
                                   id: exercise.id.toString(),
                                   name: exercise.name,
                                   stars: exercise.stars.toString(),
@@ -250,7 +252,7 @@ export default function ChaptersScreen() {
                                   styles.highlightedExerciseText,
                               ]}
                             >
-                              {exercise.name}
+                              Exercise {index + 1}: {exercise.name}
                             </Text>
                             <View
                               key={"Stars" + exercise.id}

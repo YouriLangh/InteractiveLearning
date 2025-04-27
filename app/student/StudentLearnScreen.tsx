@@ -20,13 +20,15 @@ import {
 import HapticFeedback from "react-native-haptic-feedback";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams } from "expo-router";
+import BackgroundWrapper from "../components/BackgroundWrapper";
 Sound.setCategory("Playback");
 
 const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
 
 export default function StudentLearnScreen() {
-  const { id, name, stars, answer } = useLocalSearchParams();
-  console.log(id, name, stars, answer); // You now have all exercise data!
+  const { chapterId, exerciseNr, id, name, stars, answer } =
+    useLocalSearchParams();
+  console.log(chapterId, exerciseNr, id, name, stars, answer); // You now have all exercise data!
   const router = useRouter();
   const device = useCameraDevice("back");
   const camera = useRef<Camera>(null);
@@ -132,16 +134,11 @@ export default function StudentLearnScreen() {
   }
 
   return (
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        {
-          alignItems: "center",
-          paddingTop: "10%",
-          backgroundColor: "#FBF2E5",
-        },
-      ]}
-    >
+    <BackgroundWrapper nav={true}>
+      <Text>
+        Chapter {chapterId}: Exercise {exerciseNr}
+      </Text>
+      <Text>{name}</Text>
       <Animated.View
         style={[
           styles.cameraContainer,
@@ -288,7 +285,7 @@ export default function StudentLearnScreen() {
           </View>
         </View>
       )}
-    </View>
+    </BackgroundWrapper>
   );
 }
 
