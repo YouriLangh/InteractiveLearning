@@ -125,7 +125,7 @@ export default function StudentLearnScreen() {
         {
           image: base64Image,
           fileType: "image/jpeg",
-          answer: 12,
+          answer: answer,
         }
       );
       setisLoading(false);
