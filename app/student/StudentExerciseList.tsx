@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
-import ReturnButton from "@/app/components/ui/ReturnButton";
 
 /* ====== Types ====== */
 interface Exercise {
@@ -67,7 +66,7 @@ const chaptersData: Chapter[] = [
   },
   {
     id: 3,
-    title: "Chapter 2: Addition",
+    title: "Chapter 3: Subtraction",
     exercises: [
       {
         id: 201,
@@ -83,7 +82,7 @@ const chaptersData: Chapter[] = [
   },
   {
     id: 4,
-    title: "Chapter 2: Addition",
+    title: "Chapter 4: Multiplication",
     exercises: [
       {
         id: 201,
@@ -108,22 +107,11 @@ export default function ChaptersScreen() {
     [key: number]: boolean;
   }>({});
 
-  const [progressBarDimension, setProgressBarDimension] = useState<number>(0);
-  const MASCOT_SIZE = 30;
-  const progress = 0.5;
-
   const toggleChapter = (chapterId: number) => {
     setExpandedChapters((prev) => ({
       ...prev,
       [chapterId]: !prev[chapterId],
     }));
-  };
-
-  const handleProgressBarLayout = (e: LayoutChangeEvent) => {
-    const dimension = isLandscape
-      ? e.nativeEvent.layout.height
-      : e.nativeEvent.layout.width;
-    setProgressBarDimension(dimension);
   };
 
   return (
@@ -134,31 +122,35 @@ export default function ChaptersScreen() {
           isLandscape ? styles.landscape : styles.portrait,
         ]}
       >
-        <View
-          style={[
-            styles.progressBarContainer,
-            isLandscape
-              ? styles.progressBarVertical
-              : styles.progressBarHorizontal,
-          ]}
-          onLayout={handleProgressBarLayout}
-        >
+        <View style={styles.progressBarContainer}>
+          {/* Orange bar till mascot */}
           <View
             style={[
               styles.progressLine,
-              isLandscape ? styles.lineVertical : styles.lineHorizontal,
+              {
+                borderColor: "#D16413",
+                backgroundColor: "#FF8B45",
+                height: "12%",
+              },
             ]}
-          />
+          ></View>
 
+          {/* Mascot */}
           <Image
-            source={require("@/assets/images/mascott_tr.png")}
-            style={[
-              styles.mascot,
-              isLandscape
-                ? { top: progress * progressBarDimension - MASCOT_SIZE / 2 }
-                : { left: progress * progressBarDimension - MASCOT_SIZE / 2 },
-            ]}
+            source={require("@/assets/images/mascott.png")}
+            style={styles.mascot}
           />
+          {/* Grey bar from mascot till end */}
+          <View
+            style={[
+              styles.progressLine,
+              {
+                borderColor: "#ACACAC",
+                backgroundColor: "#CACACA",
+                height: "138%",
+              },
+            ]}
+          ></View>
         </View>
 
         <ScrollView
@@ -166,66 +158,83 @@ export default function ChaptersScreen() {
           contentContainerStyle={styles.chaptersContent}
         >
           {chaptersData.map((chapter) => {
-            const isExpanded = expandedChapters[chapter.id] ?? false;
+            const isExpanded = expandedChapters[chapter.id] ?? true;
             return (
-              <View key={chapter.id} style={styles.chapterBlock}>
-                <TouchableOpacity
-                  style={[
-                    styles.chapterHeader,
-                    isExpanded && styles.chapterHeaderExpanded,
-                  ]}
-                  onPress={() => toggleChapter(chapter.id)}
+              <>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                  }}
                 >
-                  <Text style={styles.chapterTitle}>{chapter.title}</Text>
-
-                  <Image
-                    source={
-                      isExpanded
-                        ? require("@/assets/images/arrow-up.png")
-                        : require("@/assets/images/arrow-down.png")
-                    }
-                    style={styles.arrowIcon}
-                  />
-                </TouchableOpacity>
-
-                {isExpanded && (
-                  <View style={styles.exercisesContainer}>
-                    {chapter.exercises.map((exercise, index) => {
-                      const isFirstExercise = index === 0;
-                      return (
-                        <TouchableOpacity
-                          key={exercise.id}
-                          style={[
-                            styles.exerciseRow,
-                            isFirstExercise && styles.highlightedExercise,
-                          ]}
-                          onPress={() => {
-                            router.push(`/student/StudentLearnScreen`);
-                          }}
-                        >
-                          <Text
+                  <Text
+                    style={{ fontFamily: "Poppins-Bold", fontSize: 28 }}
+                    key={"title" + chapter.id}
+                  >
+                    {chapter.title}
+                  </Text>
+                  <TouchableOpacity onPress={() => toggleChapter(chapter.id)}>
+                    <Image
+                      source={require("@/assets/images/arrow-down.png")}
+                      style={[
+                        styles.arrowIcon,
+                        {
+                          transform: [
+                            { rotate: !isExpanded ? "90deg" : "0deg" },
+                          ],
+                        },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View>
+                  {isExpanded && (
+                    <View style={styles.exercisesContainer}>
+                      {chapter.exercises.map((exercise, index) => {
+                        const isFirstExercise = index === 0 && chapter.id === 1;
+                        return (
+                          <TouchableOpacity
+                            key={exercise.id}
                             style={[
-                              styles.exerciseText,
-                              isFirstExercise && styles.highlightedExerciseText,
+                              styles.exerciseRow,
+                              isFirstExercise && styles.highlightedExercise,
                             ]}
+                            onPress={() => {
+                              router.push(`/student/StudentLearnScreen`);
+                            }}
                           >
-                            {exercise.name}
-                          </Text>
-                          <View style={styles.starsWrapper}>
-                            {Array.from({ length: exercise.stars }).map(
-                              (_, i) => (
-                                <Text key={i} style={styles.star}>
-                                  ⭐
-                                </Text>
-                              )
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
+                            <Text
+                              style={[
+                                styles.exerciseText,
+                                isFirstExercise &&
+                                  styles.highlightedExerciseText,
+                              ]}
+                            >
+                              {exercise.name}
+                            </Text>
+                            <View style={styles.starsWrapper}>
+                              {Array.from({ length: exercise.stars }).map(
+                                (_, i) => (
+                                  <Image
+                                    source={
+                                      isFirstExercise
+                                        ? require("@/assets/images/Star.png")
+                                        : require("@/assets/images/GrayStar.png")
+                                    }
+                                    style={styles.star}
+                                  ></Image>
+                                )
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              </>
             );
           })}
         </ScrollView>
@@ -242,6 +251,7 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     marginTop: "5%",
+    marginHorizontal: "5%",
   },
   portrait: {
     flexDirection: "column",
@@ -252,53 +262,35 @@ const styles = StyleSheet.create({
 
   progressBarContainer: {
     alignItems: "center",
-    justifyContent: "center",
-    padding: 10,
     position: "relative",
-  },
-  progressBarVertical: {
-    width: 70,
-    height: "95%",
-  },
-  progressBarHorizontal: {
-    height: 70,
-    width: "95%",
+    height: "150%",
   },
   arrowIcon: {
-    width: 30,
-    height: 30,
-    marginLeft: 10,
+    width: 42,
+    height: 42,
     resizeMode: "contain",
   },
 
   progressLine: {
-    backgroundColor: "#FF8B45",
-    borderRadius: 5,
-  },
-  lineVertical: {
-    width: 8,
-    height: "100%",
-  },
-  lineHorizontal: {
-    width: "100%",
-    height: 8,
+    borderRadius: 50,
+    padding: 6,
+    borderWidth: 2,
   },
   mascot: {
     position: "absolute",
+    top: "10%",
+    zIndex: 1,
     width: 50,
     height: 50,
   },
 
   chaptersScroll: {
     flex: 1,
+    marginLeft: "5%",
   },
   chaptersContent: {
     paddingVertical: 20,
     paddingHorizontal: 15,
-  },
-  chapterBlock: {
-    marginBottom: 16,
-    borderRadius: 8,
   },
   chapterHeader: {
     backgroundColor: "#FFFFFF",
@@ -323,41 +315,43 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   exercisesContainer: {
-    marginTop: 8,
+    marginBottom: 32,
+    width: "95%",
+    alignSelf: "flex-end",
   },
   exerciseRow: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
+    marginBottom: 16,
+    paddingLeft: 16,
+    paddingRight: 48,
+    paddingVertical: 20,
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 1,
+    boxShadow: "0 4px 4px rgba(0, 0, 0, 0.2)",
   },
   highlightedExercise: {
-    backgroundColor: "#E6F8CD",
+    backgroundColor: "#EEFFD9",
   },
   exerciseText: {
     flex: 1,
-    fontSize: 14,
-    color: "#333",
+    fontSize: 16,
+    color: "#000",
+    fontFamily: "Poppins-Regular",
   },
   highlightedExerciseText: {
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 16,
+    color: "#000",
+    fontFamily: "Poppins-Regular",
   },
   starsWrapper: {
     flexDirection: "row",
     alignItems: "center",
   },
   star: {
-    fontSize: 18,
-    color: "#FFD700",
-    marginLeft: 4,
+    marginLeft: 6,
+    width: 26,
+    height: 26,
   },
 });
