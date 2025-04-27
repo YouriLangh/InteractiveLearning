@@ -83,6 +83,7 @@ img_base64 = base64.b64encode(buffer).decode('utf-8')
 
 # Output JSON
 result = {
+    "resolution": f"{orig_h} x {orig_w}",
     "count": ctr,
     "image": img_base64
 }

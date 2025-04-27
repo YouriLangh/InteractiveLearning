@@ -29,7 +29,6 @@ const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
 export default function StudentLearnScreen() {
   const { chapterId, exerciseNr, id, name, stars, answer } =
     useLocalSearchParams();
-  console.log(chapterId, exerciseNr, id, name, stars, answer); // You now have all exercise data!
   const router = useRouter();
   const device = useCameraDevice("back");
   const camera = useRef<Camera>(null);
@@ -201,7 +200,7 @@ export default function StudentLearnScreen() {
             photo={true}
             ref={camera}
             photoQualityBalance="speed"
-            resizeMode="contain"
+            resizeMode="cover"
             outputOrientation="device"
             enableFpsGraph={false}
           />
@@ -350,7 +349,7 @@ export default function StudentLearnScreen() {
 
 const styles = StyleSheet.create({
   cameraContainer: {
-    width: "80%",
+    width: "70%",
     height: "60%",
     borderRadius: 5,
     overflow: "hidden",

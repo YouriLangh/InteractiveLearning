@@ -31,7 +31,7 @@ export const solve = async (req: Request, res: Response) => {
         return res.status(500).send("No result from Python script");
       }
       const json = JSON.parse(result);
-
+      console.log(json.resolution);
       res.send({
         message: "Image processed",
         darkSpotCount: json.count,
