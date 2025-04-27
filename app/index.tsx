@@ -23,13 +23,6 @@ export default function Index() {
   return (
     <BackgroundWrapper>
       <SafeAreaView style={styles.innerContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/explore")}
-        >
-          <Text style={styles.buttonText}>Explore</Text>
-        </TouchableOpacity>
-
         <Text style={styles.title}>Welcome!{"\n"}Login as:</Text>
 
         <View style={styles.buttonRow}>
