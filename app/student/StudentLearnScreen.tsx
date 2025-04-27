@@ -229,7 +229,7 @@ export default function StudentLearnScreen() {
                 resizeMode="contain"
               />
               <Text style={styles.wrongText}>
-                We see {detectedDots}, but the exercise required 12
+                We see {detectedDots}, but the exercise required {answer}
               </Text>
             </View>
           )}
