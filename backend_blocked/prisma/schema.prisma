@@ -8,79 +8,74 @@ datasource db {
 }
 
 model User {
-  id             Int                @id @default(autoincrement())
-  name           String
-  email          String             @unique
-  passwordHash   String
-  role           String
-  createdAt      DateTime           @default(now())
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
 
   // Relations
-  createdExercises Exercise[]       @relation("CreatedExercises")
-  attempts        ExerciseAttempt[]
-  progress        StudentProgress[]
+  createdExercises Exercise[]        @relation("CreatedExercises")
+  attempts         ExerciseAttempt[]
+  progress         StudentProgress[]
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  title     String
-  color     String     // hex string
-  iconPath  String
-  order     Int        @default(0)   // Added for ordering categories
-
-  chapters  Chapter[]
+  id       Int    @id @default(autoincrement())
+  title    String
+  color    String // hex string
+  iconPath String
+  order    Int    @default(0) // Added for ordering categories
 }
 
 model Chapter {
-  id          Int        @id @default(autoincrement())
-  title       String
-  categoryId  Int
-  order       Int        @default(0)   // Added for ordering chapters
-  category    Category   @relation(fields: [categoryId], references: [id])
-
-  exercises   Exercise[]
-  progress    StudentProgress[]
+  id        Int               @id @default(autoincrement())
+  title     String
+  order     Int               @default(0) // Added for ordering chapters
+  exercises Exercise[]
+  progress  StudentProgress[]
 }
 
 model Exercise {
-  id          Int        @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   title       String
   description String
   difficulty  Int
   chapterId   Int
   createdBy   Int
-  visibleTo   String  // Changed from Visibility
-  order       Int        @default(0)     // Added for ordering exercises
-  stars       Int        @default(0)     // Added for star rating display
-  chapter     Chapter    @relation(fields: [chapterId], references: [id])
-  teacher     User       @relation("CreatedExercises", fields: [createdBy], references: [id])
+  visibleTo   String // Changed from Visibility
+  order       Int     @default(0) // Added for ordering exercises
+  stars       Int     @default(0) // Added for star rating display
+  chapter     Chapter @relation(fields: [chapterId], references: [id])
+  teacher     User    @relation("CreatedExercises", fields: [createdBy], references: [id])
 
-  attempts    ExerciseAttempt[]
+  attempts ExerciseAttempt[]
 }
 
 model ExerciseAttempt {
-  id             Int      @id @default(autoincrement())
-  status         String  // Changed from AttemptStatus
-  attemptsCount  Int
-  hintUsedCount  Int
-  createdAt      DateTime @default(now())
-  studentAnswer  String?                 // Added for storing student's answer
+  id            Int      @id @default(autoincrement())
+  status        String // Changed from AttemptStatus
+  attemptsCount Int
+  hintUsedCount Int
+  createdAt     DateTime @default(now())
+  studentAnswer String? // Added for storing student's answer
 
-  exerciseId     Int
-  studentId      Int
+  exerciseId Int
+  studentId  Int
 
-  exercise       Exercise @relation(fields: [exerciseId], references: [id])
-  student        User     @relation(fields: [studentId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
 }
 
 model StudentProgress {
-  id                 Int     @id @default(autoincrement())
+  id                 Int      @id @default(autoincrement())
   studentId          Int
   chapterId          Int
   completedExercises Int
   successRate        Float
-  lastUpdated        DateTime @default(now())  // Renamed from createdAt
+  lastUpdated        DateTime @default(now()) // Renamed from createdAt
 
-  student            User    @relation(fields: [studentId], references: [id])
-  chapter            Chapter @relation(fields: [chapterId], references: [id])
+  student User    @relation(fields: [studentId], references: [id])
+  chapter Chapter @relation(fields: [chapterId], references: [id])
 }

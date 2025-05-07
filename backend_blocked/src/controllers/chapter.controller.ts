@@ -26,6 +26,25 @@ export const getChapter = async (req: Request, res: Response) => {
   }
 };
 
+export const getAllChapters = async (req: Request, res: Response) => {
+  try {
+    const chapters = await prisma.chapter.findMany({
+      orderBy: { order: 'asc' } as any,
+      include: {
+        exercises: {
+          orderBy: { order: 'asc' } as any
+        }
+      }
+    });
+
+    res.json(chapters);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching chapters' });
+  }
+};
+
+
+
 export const getChaptersByCategory = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.params;
@@ -48,17 +67,21 @@ export const getChaptersByCategory = async (req: Request, res: Response) => {
 
 export const createChapter = async (req: Request, res: Response) => {
   try {
-    const { title, categoryId } = req.body;
+    const { title } = req.body;
 
-    const chapter = await prisma.chapter.create({
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    const newChapter = await prisma.chapter.create({
       data: {
         title,
-        categoryId: parseInt(categoryId)
-      }
+      },
     });
 
-    res.status(201).json(chapter);
+    res.status(201).json(newChapter);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Error creating chapter' });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,187 +8,113 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import BackgroundWrapper from '@/app/components/BackgroundWrapper';
 import ReturnButton from '@/app/components/ui/ReturnButton';
-
+import api from '@/services/api';
 
 const { width } = Dimensions.get('window');
 
-
-const data = {
-  name: 'John',
-  avatarColor: '#FFD28E', 
-  chapters: [
-    {
-      title: 'Chapter 1: Numbers',
-      expanded: false,
-      exercises: [
-        {
-          id: 1,
-          title: 'Exercise 1: Make the number 21 using blocks.',
-          timeTaken: '13m20s',
-          hintsUsed: 10,
-          attempts: [false, false, false, true],
-        },
-        {
-          id: 2,
-          title: 'Exercise 2: Make the number 35 using blocks.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-        {
-          id: 3,
-          title: 'Exercise 3: Make the number 215 using blocks.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-      ],
-    },
-    {
-      title: 'Chapter 2: Addition',
-      expanded: false,
-      exercises: [
-        {
-          id: 1,
-          title: 'Exercise 1: Use blocks to solve 2 + 15.',
-          timeTaken: '10m45s',
-          hintsUsed: 5,
-          attempts: [false, true],
-        },
-        {
-          id: 2,
-          title: 'Exercise 2: Another addition problem.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-      ],
-    },
-  ],
-};
-
 export default function StudentDetailScreen() {
+  const router = useRouter();
+  const { studentId, studentName } = useLocalSearchParams();
+  const studentIdStr = Array.isArray(studentId) ? studentId[0] : studentId;
 
-  const [chapters, setChapters] = useState(data.chapters);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
 
+  useEffect(() => {
+    const fetchStudentProgress = async () => {
+      if (!studentIdStr) return;
 
-  const toggleChapter = (index: number) => {
-    const updated = [...chapters];
-    updated[index].expanded = !updated[index].expanded;
-    setChapters(updated);
+      try {
+        const response = await api.get(`/student-progress/${studentIdStr}`);
+        setData(response.data);
+
+        // Default expand all chapters
+        const expandedMap: { [key: number]: boolean } = {};
+        response.data.chapters.forEach((chapter: any) => {
+          expandedMap[chapter.id] = true;
+        });
+        setExpandedChapters(expandedMap);
+      } catch (err) {
+        console.error("Failed to fetch student progress", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentProgress();
+  }, [studentIdStr]);
+
+  const toggleChapter = (chapterId: number) => {
+    setExpandedChapters((prev) => ({
+      ...prev,
+      [chapterId]: !prev[chapterId],
+    }));
   };
 
-  return (
-    <BackgroundWrapper>
-      <ScrollView contentContainerStyle={styles.container}>
-      <ReturnButton />
+  if (loading) {
+    return (
+      <BackgroundWrapper>
+        <View style={styles.centered}>
+          <Text>Loading student progress...</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
 
-        <View style={styles.topRow}>
-          <Image
-            source={require('@/assets/images/avatar.png')}
-            style={styles.avatar}
-          />
-          <Text style={styles.name}>{data.name}</Text>
-          <TouchableOpacity style={styles.printButton}>
-            <Text style={styles.printText}>Print Report</Text>
-          </TouchableOpacity>
+  if (!data || !data.chapters || data.chapters.length === 0) {
+    return (
+      <BackgroundWrapper>
+        <View style={styles.centered}>
+          <Text>No progress or exercises found for this student yet.</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
+
+  return (
+    <BackgroundWrapper nav={true}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <ReturnButton />
+        <View style={styles.header}>
+          <View style={[styles.avatar, { backgroundColor: '#FFD28E' }]} />
+          <Text style={styles.studentName}>{studentName || "Student"}</Text>
         </View>
 
+        {data.chapters.map((chapter: any) => (
+          <View key={chapter.id} style={styles.chapterContainer}>
+            <TouchableOpacity
+              onPress={() => toggleChapter(chapter.id)}
+              style={styles.chapterHeader}
+            >
+              <Text style={styles.chapterTitle}>{chapter.title}</Text>
+              <Text style={styles.chapterToggle}>
+                {expandedChapters[chapter.id] ? "-" : "+"}
+              </Text>
+            </TouchableOpacity>
 
-        {chapters.map((chapter, cIndex) => {
-          const isExpanded = chapter.expanded;
-          return (
-            <View key={cIndex} style={styles.chapterContainer}>
-
-              <TouchableOpacity
-                style={styles.chapterHeader}
-                onPress={() => toggleChapter(cIndex)}
-              >
-                <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                <Image
-                  source={
-                    isExpanded
-                      ? require('@/assets/images/arrow-up.png')
-                      : require('@/assets/images/arrow-down.png')
-                  }
-                  style={styles.arrowIcon}
-                />
-              </TouchableOpacity>
-
-
-              {isExpanded && (
-                <View style={styles.exercisesContainer}>
-                  {chapter.exercises.map((ex, eIndex) => {
-                    const isFirst = eIndex === 0;
-                    return (
-                      <View
-                        key={ex.id}
-                        style={[
-                          styles.exerciseRow,
-                          isFirst && styles.highlightedExercise,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.exerciseTitle,
-                            isFirst && styles.highlightedExerciseText,
-                          ]}
-                        >
-                          {ex.title}
-                        </Text>
-
-
-                        {isFirst && (
-                          <View style={styles.detailsRow}>
-                            <Text style={styles.detailsText}>
-                              Time taken: {ex.timeTaken || 'N/A'}
-                            </Text>
-                            <Text style={styles.detailsText}>
-                              Hints used: {ex.hintsUsed}
-                            </Text>
-                            <View style={styles.attemptsContainer}>
-                              <Text style={styles.detailsText}>Attempts: </Text>
-                              {ex.attempts.length > 0 ? (
-                                ex.attempts.map((attempt, i) => (
-                                  <Text
-                                    key={i}
-                                    style={[
-                                      styles.attemptIcon,
-                                      { color: attempt ? 'green' : 'red' },
-                                    ]}
-                                  >
-                                    {attempt ? '✓' : '✕'}
-                                  </Text>
-                                ))
-                              ) : (
-                                <Text style={styles.detailsText}>None</Text>
-                              )}
-                            </View>
-                          </View>
-                        )}
-
-
-                        {!isFirst && (
-                          <View style={styles.nonFirstDetails}>
-                            <Text style={styles.hintText}>
-                              {ex.attempts.length > 0
-                                ? `Attempts: ${ex.attempts
-                                    .map((a) => (a ? '✓' : '✕'))
-                                    .join(', ')}`
-                                : 'No attempts yet'}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
+            {expandedChapters[chapter.id] && chapter.exercises.map((exercise: any) => (
+              <View key={exercise.id} style={styles.exerciseContainer}>
+                <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+                <Text style={styles.exerciseInfo}>
+                  Time Taken: {exercise.timeTaken ?? "N/A"} | Hints Used: {exercise.hintsUsed ?? "N/A"}
+                </Text>
+                <View style={styles.attemptsRow}>
+                  {(exercise.attempts ?? []).map((attempt: boolean, index: number) => (
+                    <Image
+                      key={index}
+                      source={attempt ? require('@/assets/images/Star.png') : require('@/assets/images/GrayStar.png')}
+                      style={styles.starIcon}
+                    />
+                  ))}
                 </View>
-              )}
-            </View>
-          );
-        })}
+              </View>
+            ))}
+          </View>
+        ))}
       </ScrollView>
     </BackgroundWrapper>
   );
@@ -196,114 +122,68 @@ export default function StudentDetailScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 25,
-    paddingBottom: 60,
+    padding: 20,
   },
-
-
-  topRow: {
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
+    marginBottom: 30,
   },
   avatar: {
-    width: 70,
-    height: 70,
-    marginRight: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
   },
-  name: {
-    fontSize: 20,
-    color: '#333',
-    fontWeight: 'bold',
-    flex: 1,
-  },
-  printButton: {
-    backgroundColor: '#487D33',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  printText: {
-    color: 'white',
+  studentName: {
+    fontSize: 24,
     fontWeight: 'bold',
   },
-
-
   chapterContainer: {
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    padding: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 1,
+    marginBottom: 20,
   },
   chapterHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    backgroundColor: '#E0F8E0',
+    padding: 12,
+    borderRadius: 8,
   },
   chapterTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
-  arrowIcon: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
+  chapterToggle: {
+    fontSize: 18,
   },
-
-
-  exercisesContainer: {
-    marginTop: 6,
-  },
-  exerciseRow: {
-    backgroundColor: '#fff',
-    marginVertical: 4,
+  exerciseContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 12,
     borderRadius: 8,
-    padding: 10,
-  },
-  highlightedExercise: {
-    backgroundColor: '#E9FBD5', 
+    marginTop: 10,
   },
   exerciseTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 15,
-    color: '#333',
     marginBottom: 6,
   },
-  highlightedExerciseText: {
-    color: '#333',
-  },
-  detailsRow: {
-    flexDirection: 'column',
-    marginTop: 4,
-  },
-  detailsText: {
+  exerciseInfo: {
     fontSize: 14,
-    color: '#333',
-    marginBottom: 2,
+    color: '#555',
+    marginBottom: 6,
   },
-  attemptsContainer: {
+  attemptsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
   },
-  attemptIcon: {
-    fontSize: 16,
-    marginLeft: 4,
-  },
-
-  nonFirstDetails: {
-    marginTop: 2,
-  },
-  hintText: {
-    fontSize: 13,
-    color: '#666',
+  starIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 6,
   },
 });

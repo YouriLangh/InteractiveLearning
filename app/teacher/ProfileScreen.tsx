@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   StyleSheet,
@@ -11,71 +11,81 @@ import {
 } from "react-native";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
 import ReturnButton from "@/app/components/ui/ReturnButton";
+import api from "@/services/api";
 
 const { width } = Dimensions.get("window");
-
-const students = [
-  { name: "John Doe" },
-  { name: "Jane Doe" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-];
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("students");
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await api.get("/users/students");
+        setStudents(response.data);
+      } catch (err) {
+        console.error("Failed to fetch students", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   return (
     <BackgroundWrapper nav={true}>
       <ScrollView contentContainerStyle={styles.container}>
         <ReturnButton />
         <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/ProfileScreen")}
-          >
-            <Text
-              style={[styles.header, activeTab === "students" && styles.active]}
-            >
+          <TouchableOpacity onPress={() => router.push("/teacher/ProfileScreen")}>
+            <Text style={[styles.header, activeTab === "students" && styles.active]}>
               Students
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/ChapterScreen")}
-          >
-            <Text
-              style={[styles.header, activeTab === "chapters" && styles.active]}
-            >
+          <TouchableOpacity onPress={() => router.push("/teacher/ChapterScreen")}>
+            <Text style={[styles.header, activeTab === "chapters" && styles.active]}>
               Chapters
             </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.grid}>
-          {students.map((student, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => router.push("/teacher/StudentDetailScreen")}
-            >
-              <TouchableOpacity style={styles.avatar}>
-                <Image
-                  source={require("@/assets/images/avatar.png")}
-                  style={styles.avatar}
-                />
+        {loading ? (
+          <Text>Loading students...</Text>
+        ) : (
+          <View style={styles.grid}>
+            {students.map((student, index) => (
+              <TouchableOpacity
+                key={student.id}
+                style={styles.card}
+                onPress={() =>
+                  router.push({
+                    pathname: "/teacher/StudentDetailScreen",
+                    params: {
+                      studentId: student.id.toString(),
+                      studentName: student.name,
+                    },
+                  })
+                }
+              >
+                <TouchableOpacity style={styles.avatar}>
+                  <Image
+                    source={require("@/assets/images/avatar.png")}
+                    style={styles.avatar}
+                  />
+                </TouchableOpacity>
+                <View style={styles.infoText}>
+                  <Text style={styles.name}>{student.name}</Text>
+                  <Text style={styles.label}>Exercise</Text>
+                  <Text style={styles.label}>Success Rate</Text>
+                </View>
               </TouchableOpacity>
-              <View style={styles.infoText}>
-                <Text style={styles.name}>{student.name}</Text>
-                <Text style={styles.label}>Exercise</Text>
-                <Text style={styles.label}>Success Rate</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </BackgroundWrapper>
   );
@@ -100,18 +110,6 @@ const styles = StyleSheet.create({
     color: "#000",
     borderBottomWidth: 2,
     borderBottomColor: "#000",
-  },
-
-  addButton: {
-    backgroundColor: "#A4C8F0",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
   },
   grid: {
     flexDirection: "row",

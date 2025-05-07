@@ -52,3 +52,20 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error updating user profile' });
   }
 }; 
+export const getAllStudents = async (req: Request, res: Response) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: "STUDENT" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    res.json(students);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching students' });
+  }
+};

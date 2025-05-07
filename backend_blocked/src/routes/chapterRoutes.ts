@@ -9,7 +9,8 @@ const {
   deleteChapter,
   getChapter,
   getChaptersByCategory,
-  updateChapterOrder
+  updateChapterOrder,
+  getAllChapters, // <-- NEW
 } = require('../controllers/chapter.controller');
 
 const router = Router();
@@ -17,6 +18,8 @@ const router = Router();
 // Protected routes (require authentication)
 router.use(authenticateToken as any);
 
+// ✅ NEW PUBLIC ROUTE → Get all chapters with exercises (no category filter)
+router.get('/', getAllChapters);
 // Public chapter routes
 router.get('/:id', getChapter);
 router.get('/category/:categoryId', getChaptersByCategory);
@@ -28,4 +31,4 @@ router.put('/:id', updateChapter);
 router.delete('/:id', deleteChapter);
 router.put('/:id/order', updateChapterOrder);
 
-export default router; 
+export default router;

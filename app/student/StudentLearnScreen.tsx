@@ -121,7 +121,7 @@ export default function StudentLearnScreen() {
 
     try {
       const response = await axios.post(
-        "http://192.168.129.9:5000/api/upload/solve",
+        "http://10.50.6.68:5000/api/upload/solve",
         {
           image: base64Image,
           fileType: "image/jpeg",
