@@ -1,0 +1,72 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+dist/
+expo-env.d.ts
+
+# Native build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcuserstate
+ios/*.xcuserdata
+
+# Signing/Keys
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Logs and Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+*.orig.*
+
+# Metro
+.metro-cache/
+metro-cache/
+metro.config.js.backup
+.metro-health-check*
+
+# macOS / OS garbage
+.DS_Store
+*.pem
+
+# Environment variables
+.env
+.env.*
+.env*.local
+
+# Jest test coverage
+coverage/
+
+# IDE garbage
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+#backend
+backend_blocked/.env
+backend_blocked/node_modules/
+backend_blocked/package-lock.json
+backend_blocked/yarn.lock
+backend_blocked/yarn-debug.log*
+backend_blocked/yarn-error.log*
+backend_blocked/yarn-debug.log
+backend_blocked/yarn-error.log
+
+app.json
