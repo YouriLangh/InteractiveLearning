@@ -15,10 +15,10 @@ The database is managed using **Prisma**. Below is the relational schema:
 #### 1. `User`
 - `id` (PK)
 - `name`
-- `email` (UNIQUE)
-- `passwordHash`
+- `code` (part of compound UNIQUE with name)
 - `role` (string: e.g. 'STUDENT' | 'TEACHER')
 - `createdAt`
+- `updatedAt`
 
 ---
 
@@ -127,8 +127,7 @@ npm run dev
   ```json
   {
     "name": "Firas",
-    "email": "firas@example.com",
-    "password": "supersecure",
+    "code": "12345",
     "role": "STUDENT"
   }
   ```
@@ -137,8 +136,8 @@ npm run dev
 - **Request Body:**
   ```json
   {
-    "email": "firas@example.com",
-    "password": "supersecure"
+    "name": "Firas",
+    "code": "12345"
   }
   ```
 
@@ -149,7 +148,7 @@ npm run dev
     ```json
     {
       "name": "New Name",
-      "email": "new@email.com"
+      "code": "54321"
     }
     ```
 
@@ -214,11 +213,21 @@ npm run dev
     ```
 
 ### 📈 Student Progress
-- `GET /api/student-progress/:studentId/chapter/:chapterId` — get student progress (teacher or self)
-- `PUT /api/student-progress/:studentId/chapter/:chapterId` — update student progress (student only)
+- `GET /api/progress/:studentId/chapter/:chapterId` — get student progress (teacher or self)
+- `PUT /api/progress/:studentId/chapter/:chapterId` — update student progress (student only)
   - **Request Body:**
     ```json
     { "completedExercises": 5, "successRate": 0.8 }
+    ```
+- `GET /api/progress/:studentId/success-rate` — get student's overall success rate
+  - **Response:**
+    ```json
+    {
+      "studentId": 1,
+      "successRate": 75.5,
+      "totalExercises": 20,
+      "solvedExercises": 15
+    }
     ```
 
 ---

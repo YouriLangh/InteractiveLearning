@@ -8,11 +8,14 @@ import {
   Vibration,
   Animated,
   Image,
+  Alert,
 } from "react-native";
 import Sound from "react-native-sound";
 import RNFS from "react-native-fs";
 import axios from "axios";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
+import ReturnButton from "../components/ui/ReturnButton";
 import {
   Camera,
   useCameraDevice,
@@ -27,14 +30,11 @@ Sound.setCategory("Playback");
 const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
 
 export default function StudentLearnScreen() {
-  const { chapterId, exerciseNr, id, name, stars, answer } =
+  const { chapterId, exerciseNr, id, title, stars, answer } =
     useLocalSearchParams();
   const router = useRouter();
   const device = useCameraDevice("back");
   const formats = device?.formats;
-  // const bestFormat = formats?.find(
-  //   (format) => format.photoWidth === 3264 && format.photoHeight === 2448
-  // );
   const bestFormat = formats?.find(
     (format) => format.photoWidth === 1280 && format.photoHeight === 960
   );
@@ -49,6 +49,8 @@ export default function StudentLearnScreen() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const [detectedDots, setDetectedDots] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const expectedAnswer = parseInt(answer as string, 10);
+
   const triggerShake = () => {
     Animated.sequence([
       Animated.timing(shakeAnim, {
@@ -121,24 +123,26 @@ export default function StudentLearnScreen() {
 
     try {
       const response = await axios.post(
-        "http://192.168.129.9:5000/api/upload/solve",
+        `${Constants.expoConfig?.extra?.apiUrl}/upload/solve`,
         {
           image: base64Image,
           fileType: "image/jpeg",
-          answer: answer,
+          answer: expectedAnswer,
         }
       );
       setisLoading(false);
-      setDetectedDots(response.data.darkSpotCount);
-      const solved = response.data.solved;
+      const detectedCount = response.data.darkSpotCount;
+      setDetectedDots(detectedCount);
+      const solved = detectedCount === expectedAnswer;
       setImageBase64(response.data.processedImage);
+      
       setTimeout(() => {
         if (solved) {
           setShowSolveDialogue(true);
-          triggerDialogueShake;
+          triggerDialogueShake();
           vibrateFeedback("correct");
           correctSound.play();
-          setIsFrozen(true); // freeze the camera
+          setIsFrozen(true);
           setTimeout(() => {
             setShowSolveDialogue(false);
             setIsFrozen(false);
@@ -151,13 +155,14 @@ export default function StudentLearnScreen() {
           triggerShake();
           setIsFrozen(true);
           setShowPreview(true);
-          setAttemptMade(true); // Mark that an attempt has been made
+          setAttemptMade(true);
         }
       }, 150);
     } catch (error) {
       console.error("Upload failed:", error);
+      setisLoading(false);
+      Alert.alert("Error", "Failed to process the image. Please try again.");
     }
-    setisLoading(false);
   }
 
   if (device == null || !hasPermission) {
@@ -170,6 +175,7 @@ export default function StudentLearnScreen() {
 
   return (
     <BackgroundWrapper nav={true}>
+      <ReturnButton />
       <View style={{ flex: 1, alignItems: "center", paddingTop: 30 }}>
         <Text
           style={{
@@ -190,7 +196,7 @@ export default function StudentLearnScreen() {
             marginBottom: 6,
           }}
         >
-          {name}
+          {title}
         </Text>
         <Animated.View
           style={[
@@ -231,7 +237,12 @@ export default function StudentLearnScreen() {
                 resizeMode="contain"
               />
               <Text style={styles.wrongText}>
-                We see {detectedDots}, but the exercise required {answer}
+                {detectedDots === 0 
+                  ? "No blocks detected. Please try again."
+                  : detectedDots < expectedAnswer
+                  ? `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Add ${expectedAnswer - detectedDots} more!`
+                  : `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Remove ${detectedDots - expectedAnswer}!`
+                }
               </Text>
             </View>
           )}

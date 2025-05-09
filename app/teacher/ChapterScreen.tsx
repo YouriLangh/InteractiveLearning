@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -7,8 +7,13 @@ import {
   TouchableOpacity,
   ScrollView,
   useWindowDimensions,
+  Modal,
+  TextInput,
 } from 'react-native';
 import BackgroundWrapper from '@/app/components/BackgroundWrapper';
+import api from '@/services/api';
+import ReturnButton from '@/app/components/ui/ReturnButton';
+import { Ionicons } from '@expo/vector-icons';
 
 /* ====== Types ====== */
 interface Exercise {
@@ -23,67 +28,104 @@ interface Chapter {
   exercises: Exercise[];
 }
 
-/* ====== Dummy Data ====== */
-const chaptersData: Chapter[] = [
-  {
-    id: 1,
-    title: 'Numbers',
-    color: '#A7F7B1', 
-    exercises: [
-      { id: 101, title: 'Make the number 21 using blocks.' },
-      { id: 102, title: 'Make the number 35 using blocks.' },
-      { id: 103, title: 'Make the number 215 using blocks.' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Addition',
-    color: '#FFD399', 
-    exercises: [
-      { id: 201, title: 'Use blocks to solve 2 + 15.' },
-      { id: 202, title: 'Some other addition exercise.' },
-      { id: 203, title: 'And another one.' },
-      { id: 204, title: 'You get the idea.' },
-      { id: 205, title: 'One more example.' },
-      { id: 206, title: 'Yet another example.' },
-      { id: 207, title: 'Add a bunch of blocks.' },
-      { id: 208, title: 'Final addition test.' },
-    ],
-  },
-];
-
 export default function ChapterScreen() {
- const router = useRouter(); 
-    
+  const router = useRouter();
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
-  const [chapters, setChapters] = useState<Chapter[]>(chaptersData);
-
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('chapters');
 
+  const [addChapterVisible, setAddChapterVisible] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState('');
+
+  const fetchChapters = async () => {
+    try {
+      const response = await api.get('/chapters');
+      // Add colors to chapters
+      const chaptersWithColors = response.data.map((chapter: Chapter, index: number) => ({
+        ...chapter,
+        color: index % 2 === 0 ? '#A7F7B1' : '#FFD399',
+      }));
+      setChapters(chaptersWithColors);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load chapters.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchChapters();
+  }, []);
+
+  const createChapter = async () => {
+    if (!newChapterTitle.trim()) return;
+
+    try {
+      await api.post('/chapters', { title: newChapterTitle });
+      setAddChapterVisible(false);
+      setNewChapterTitle('');
+      fetchChapters();
+    } catch (err) {
+      console.error('Error creating chapter', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text>Loading chapters...</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text style={{ color: 'red' }}>{error}</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
+
   return (
-    <BackgroundWrapper>
+    <BackgroundWrapper nav={true}>
       <View style={styles.container}>
-      <View style={styles.headerRow}>
-      <TouchableOpacity onPress={() => router.push('/teacher/ProfileScreen')}>
-        <Text style={[styles.header, activeTab === 'students' && styles.active]}>
-          Students
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/teacher/ChapterScreen')}>
-        <Text style={[styles.header, activeTab === 'chapters' && styles.active]}>
-          Chapters
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.addChapterButton} onPress={() => router.push('/teacher/CreateExerciseScreen')}>
+        <View style={styles.headerContainer}>
+          <ReturnButton />
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={styles.tabButton}
+              onPress={() => router.push('/teacher/ProfileScreen')}
+            >
+              <Text style={[styles.tabText, activeTab === 'students' && styles.activeTab]}>
+                Students
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.tabButton}
+              onPress={() => router.push('/teacher/ChapterScreen')}
+            >
+              <Text style={[styles.tabText, activeTab === 'chapters' && styles.activeTab]}>
+                Chapters
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity 
+            style={styles.addChapterButton} 
+            onPress={() => setAddChapterVisible(true)}
+          >
             <Text style={styles.addChapterText}>+ Add chapter</Text>
           </TouchableOpacity>
+        </View>
 
-    </View>
-
-
-        {/* Chapters List */}
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -96,33 +138,82 @@ export default function ChapterScreen() {
                 { backgroundColor: chapter.color || '#F0F0F0' },
               ]}
             >
-
               <View style={styles.chapterHeader}>
                 <Text style={styles.chapterTitle}>
                   {`Chapter ${index + 1}: ${chapter.title} (${chapter.exercises.length})`}
                 </Text>
                 <TouchableOpacity
                   style={styles.addExerciseButton}
-                 
+                  onPress={() =>
+                    router.push({
+                      pathname: '/teacher/CreateExerciseScreen',
+                      params: { chapterId: chapter.id.toString() },
+                    })
+                  }
                 >
                   <Text style={styles.addExerciseText}>+ Add exercise</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Exercises */}
               {chapter.exercises.map((exercise) => (
-                <View key={exercise.id} style={styles.exerciseCard}>
+                <TouchableOpacity
+                  key={exercise.id}
+                  style={styles.exerciseCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/teacher/CreateExerciseScreen',
+                      params: { 
+                        exerciseId: exercise.id.toString(),
+                        mode: 'view'
+                      },
+                    })
+                  }
+                >
                   <Text style={styles.exerciseText}>{exercise.title}</Text>
                   <TouchableOpacity
-                    style={styles.editButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/teacher/CreateExerciseScreen',
+                        params: { 
+                          exerciseId: exercise.id.toString(),
+                          mode: 'edit'
+                        },
+                      })
+                    }
                   >
-                    <Text style={styles.editIcon}>✏️</Text>
+                    <Ionicons name="pencil" size={20} color="orange" />
                   </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ))}
         </ScrollView>
+
+        <Modal visible={addChapterVisible} transparent animationType="slide">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Add Chapter</Text>
+              <TextInput
+                placeholder="Chapter Title"
+                style={styles.input}
+                value={newChapterTitle}
+                onChangeText={setNewChapterTitle}
+              />
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={createChapter}
+              >
+                <Text style={{ color: 'white' }}>Create</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: 'gray' }]}
+                onPress={() => setAddChapterVisible(false)}
+              >
+                <Text style={{ color: 'white' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </BackgroundWrapper>
   );
@@ -132,48 +223,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerRow: {
+  headerContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  header: {
+  tabContainer: {
+    flexDirection: 'row',
+    marginLeft: 20,
+  },
+  tabButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  tabText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginHorizontal: 20,
     color: '#555',
   },
-  active: {
+  activeTab: {
     color: '#000',
     borderBottomWidth: 2,
     borderBottomColor: '#000',
   },
-
-
-  topNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  navItem: {
-    marginRight: 16,
-  },
-  navText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#000',
-  },
-  inactiveTab: {
-    color: '#888',
-  },
   addChapterButton: {
     marginLeft: 'auto',
-    marginRight: "2%",
-    backgroundColor: '#487D33', 
+    backgroundColor: '#487D33',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -183,15 +259,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-
   scrollArea: {
     flex: 1,
-    marginTop: 16,
   },
   scrollContent: {
+    padding: 16,
     paddingBottom: 20,
   },
-
   chapterContainer: {
     marginHorizontal: 16,
     marginBottom: 20,
@@ -210,7 +284,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   addExerciseButton: {
-    backgroundColor: '#E88B43', 
+    backgroundColor: '#E88B43',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -220,7 +294,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-
   exerciseCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -229,7 +302,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -241,10 +313,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-  editButton: {
-    marginLeft: 8,
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  editIcon: {
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
     fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#3BB143',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginBottom: 10,
   },
 });

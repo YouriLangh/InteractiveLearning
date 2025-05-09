@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,16 @@ import {
   ScrollView,
   useWindowDimensions,
   Image,
-  UIManager, // Import UIManager for Android support
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
+import api from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 /* ====== Types ====== */
 interface Exercise {
   id: number;
-  name: string;
+  title: string;
   stars: number;
   answer: number;
 }
@@ -26,119 +26,51 @@ interface Chapter {
   title: string;
   exercises: Exercise[];
 }
-/* ====== Dummy Data ====== */
-const chaptersData: Chapter[] = [
-  {
-    id: 1,
-    title: "Chapter 1: Numbers",
-    exercises: [
-      {
-        id: 101,
-        name: "Build the number 17 with blocks.",
-        stars: 2,
-        answer: 17,
-      },
-      {
-        id: 102,
-        name: "Build the number 35 with blocks.",
-        stars: 5,
-        answer: 35,
-      },
-      {
-        id: 103,
-        name: "Build the number 215 with blocks.",
-        stars: 3,
-        answer: 215,
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "Chapter 2: Addition",
-    exercises: [
-      {
-        id: 201,
-        name: "What is 15 + 6?",
-        stars: 0,
-        answer: 21,
-      },
-      {
-        id: 202,
-        name: "What is 20 + 15?",
-        stars: 0,
-        answer: 35,
-      },
-      {
-        id: 203,
-        name: "What is 120 + 95?",
-        stars: 0,
-        answer: 215,
-      },
-    ],
-  },
-  {
-    id: 3,
-    title: "Chapter 3: Subtraction",
-    exercises: [
-      {
-        id: 301,
-        name: "What is 50 - 29?",
-        stars: 0,
-        answer: 21,
-      },
-      {
-        id: 302,
-        name: "What is 70 - 35?",
-        stars: 0,
-        answer: 35,
-      },
-      {
-        id: 303,
-        name: "What is 300 - 85?",
-        stars: 0,
-        answer: 215,
-      },
-    ],
-  },
-  {
-    id: 4,
-    title: "Chapter 4: Multiplication",
-    exercises: [
-      {
-        id: 401,
-        name: "What is 3 × 7?",
-        stars: 0,
-        answer: 21,
-      },
-      {
-        id: 402,
-        name: "What is 5 × 7?",
-        stars: 0,
-        answer: 35,
-      },
-      {
-        id: 403,
-        name: "What is 43 × 5?",
-        stars: 0,
-        answer: 215,
-      },
-    ],
-  },
-];
 
-export default function ChaptersScreen() {
+export default function StudentExerciseList() {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const router = useRouter();
+  const { user } = useAuth();
 
-  const [expandedChapters, setExpandedChapters] = useState<{
-    [key: number]: boolean;
-  }>({
-    1: true,
-    2: false,
-    3: false,
-    4: false,
-  });
+  const [chaptersData, setChaptersData] = useState<Chapter[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchChapters = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/chapters");
+        setChaptersData(response.data);
+        const expandedInitialState = response.data.reduce((acc: any, chapter: Chapter) => {
+          acc[chapter.id] = true;
+          return acc;
+        }, {});
+        setExpandedChapters(expandedInitialState);
+
+        // Fetch student progress using the current user's ID
+        if (user?.id) {
+          const progressResponse = await api.get(`/progress/${user.id}/success-rate`);
+          setProgressPercentage(progressResponse.data.successRate || 0);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load exercises.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChapters();
+  }, [user?.id]);
+
+  // Calculate mascot position and orange line height based on progress
+  const mascotPosition = progressPercentage;
+  const orangeLineHeight = progressPercentage;
+  const greyLineHeight = 100 - progressPercentage;
 
   const toggleChapter = (chapterId: number) => {
     setExpandedChapters((prev) => ({
@@ -146,6 +78,26 @@ export default function ChaptersScreen() {
       [chapterId]: !prev[chapterId],
     }));
   };
+
+  if (loading) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text>Loading...</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text style={{ color: "red" }}>{error}</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
 
   return (
     <BackgroundWrapper nav={true}>
@@ -163,7 +115,7 @@ export default function ChaptersScreen() {
               {
                 borderColor: "#D16413",
                 backgroundColor: "#FF8B45",
-                height: "20%",
+                height: `${orangeLineHeight}%`,
               },
             ]}
           ></View>
@@ -171,7 +123,7 @@ export default function ChaptersScreen() {
           {/* Mascot */}
           <Image
             source={require("@/assets/images/mascott.png")}
-            style={styles.mascot}
+            style={[styles.mascot, { top: `${mascotPosition}%` }]}
           />
           {/* Grey bar from mascot till end */}
           <View
@@ -180,7 +132,7 @@ export default function ChaptersScreen() {
               {
                 borderColor: "#ACACAC",
                 backgroundColor: "#CACACA",
-                height: "138%",
+                height: `${greyLineHeight}%`,
               },
             ]}
           ></View>
@@ -238,9 +190,9 @@ export default function ChaptersScreen() {
                                   chapterId: chapter.id.toString(),
                                   exerciseNr: (index + 1).toString(),
                                   id: exercise.id.toString(),
-                                  name: exercise.name,
+                                  title: exercise.title,
                                   stars: exercise.stars.toString(),
-                                  answer: exercise.answer.toString(),
+                                  answer: exercise.answer?.toString() || "0",
                                 },
                               });
                             }}
@@ -252,7 +204,7 @@ export default function ChaptersScreen() {
                                   styles.highlightedExerciseText,
                               ]}
                             >
-                              Exercise {index + 1}: {exercise.name}
+                              Exercise {index + 1}: {exercise.title}
                             </Text>
                             <View
                               key={"Stars" + exercise.id}
@@ -397,5 +349,10 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     width: 26,
     height: 26,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

@@ -1,31 +1,29 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware';
 import { teacherMiddleware } from '../middlewares/teacher.middleware';
-
-// Import controller functions
-const {
+import {
   createChapter,
   updateChapter,
   deleteChapter,
   getChapter,
-  getChaptersByCategory,
+  getAllChapters,
   updateChapterOrder
-} = require('../controllers/chapter.controller');
+} from '../controllers/chapter.controller';
 
 const router = Router();
 
 // Protected routes (require authentication)
-router.use(authenticateToken as any);
+router.use('/', authenticateToken as RequestHandler);
 
-// Public chapter routes
-router.get('/:id', getChapter);
-router.get('/category/:categoryId', getChaptersByCategory);
+// Public routes (authenticated users)
+router.get('/', getAllChapters as RequestHandler);
+router.get('/:id', getChapter as RequestHandler);
 
 // Teacher-only routes
-router.use(teacherMiddleware as any);
-router.post('/', createChapter);
-router.put('/:id', updateChapter);
-router.delete('/:id', deleteChapter);
-router.put('/:id/order', updateChapterOrder);
+router.use('/', teacherMiddleware as RequestHandler);
+router.post('/', createChapter as RequestHandler);
+router.put('/:id', updateChapter as RequestHandler);
+router.delete('/:id', deleteChapter as RequestHandler);
+router.put('/:id/order', updateChapterOrder as RequestHandler);
 
 export default router; 

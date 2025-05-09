@@ -1,21 +1,27 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware';
-
-// Import controller functions
-const {
+import {
+  getStudentFullProgress,
   getStudentProgress,
-  updateStudentProgress
-} = require('../controllers/studentProgress.controller');
+  updateStudentProgress,
+  getStudentSuccessRate
+} from '../controllers/studentProgress.controller';
 
 const router = Router();
 
 // Protected routes (require authentication)
-router.use(authenticateToken as any);
+router.use('/', authenticateToken as RequestHandler);
 
-// Get student progress
-router.get('/:studentId/chapter/:chapterId', getStudentProgress);
+// Get student progress for a specific chapter
+router.get('/:studentId/chapter/:chapterId', getStudentProgress as RequestHandler);
 
-// Update student progress
-router.put('/:studentId/chapter/:chapterId', updateStudentProgress);
+// Get full student progress (all chapters)
+router.get('/:studentId', getStudentFullProgress as RequestHandler);
+
+// Get student success rate
+router.get('/:studentId/success-rate', getStudentSuccessRate as RequestHandler);
+
+// Update student progress for a specific chapter
+router.put('/:studentId/chapter/:chapterId', updateStudentProgress as RequestHandler);
 
 export default router; 

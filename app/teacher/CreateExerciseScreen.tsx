@@ -1,162 +1,230 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
-  StyleSheet,
   View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-} from 'react-native';
-import BackgroundWrapper from '@/app/components/BackgroundWrapper';
-import ReturnButton from '@/app/components/ui/ReturnButton';
-
-
-const { width } = Dimensions.get('window');
-
-
-const formConfig = {
-  defaultTitle: "",
-  defaultChapter: "CHAPTER 3",
-  defaultExercise: "X",
-  defaultVisibleTo: "ALL",
-  defaultDifficulty: 3,
-  chapters: ["CHAPTER 1", "CHAPTER 2", "CHAPTER 3", "CHAPTER 4"],
-  exerciseTypes: ["Type A", "Type B", "Type C"],
-  visibleToOptions: ["ALL", "Teachers", "Students"],
-};
+  Alert,
+} from "react-native";
+import BackgroundWrapper from "@/app/components/BackgroundWrapper";
+import ReturnButton from "@/app/components/ui/ReturnButton";
+import api from "@/services/api";
 
 export default function CreateExerciseScreen() {
+  const router = useRouter();
+  const { chapterId, exerciseId, mode } = useLocalSearchParams();
 
-  const [title, setTitle] = useState('');
-  const [chapter, setChapter] = useState('');
-  const [exercise, setExercise] = useState('');
-  const [visibleTo, setVisibleTo] = useState('');
-  const [difficulty, setDifficulty] = useState(3);
+  const chapterIdStr = Array.isArray(chapterId) ? chapterId[0] : chapterId;
+  const exerciseIdStr = Array.isArray(exerciseId) ? exerciseId[0] : exerciseId;
+  const isViewMode = mode === 'view';
 
-  const [chapterOptions, setChapterOptions] = useState<string[]>([]);
-  const [visibleToOptions, setVisibleToOptions] = useState<string[]>([]);
-
-  const [showChapterDropdown, setShowChapterDropdown] = useState(false);
-  const [showVisibleToDropdown, setShowVisibleToDropdown] = useState(false);
-
-  const [loaded, setLoaded] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [stars, setStars] = useState("0");
+  const [visibleTo, setVisibleTo] = useState("ALL");
+  const [order, setOrder] = useState("0");
+  const [difficulty, setDifficulty] = useState("1");
+  const [answer, setAnswer] = useState("0");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const fetchExercise = async () => {
+      if (!exerciseIdStr) return;
 
-    setTitle(formConfig.defaultTitle);
-    setChapter(formConfig.defaultChapter);
-    setExercise(formConfig.defaultExercise);
-    setVisibleTo(formConfig.defaultVisibleTo);
-    setDifficulty(formConfig.defaultDifficulty);
-    setChapterOptions(formConfig.chapters);
-    setVisibleToOptions(formConfig.visibleToOptions);
-    setLoaded(true);
-  }, []);
+      try {
+        const response = await api.get(`/exercises/${exerciseIdStr}`);
+        const exercise = response.data;
+        setTitle(exercise.title);
+        setDescription(exercise.description || "");
+        setStars(exercise.stars?.toString() || "0");
+        setVisibleTo(exercise.visibleTo || "ALL");
+        setOrder(exercise.order?.toString() || "0");
+        setDifficulty(exercise.difficulty?.toString() || "1");
+        setAnswer(exercise.answer?.toString() || "0");
+      } catch (err) {
+        console.error("Failed to load exercise", err);
+        Alert.alert("Error", "Failed to load exercise details.");
+      }
+    };
 
-  const handleCreate = () => {
+    fetchExercise();
+  }, [exerciseIdStr]);
 
-    console.log('Create tapped', { title, chapter, exercise, visibleTo, difficulty });
+  const saveExercise = async () => {
+    if (!title.trim()) {
+      Alert.alert("Validation", "Please enter a title.");
+      return;
+    }
+
+    if (!answer.trim()) {
+      Alert.alert("Validation", "Please enter the correct answer.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        title,
+        description,
+        stars: parseInt(stars),
+        visibleTo,
+        order: parseInt(order),
+        difficulty: parseInt(difficulty),
+        answer: parseInt(answer),
+      };
+
+      if (exerciseIdStr) {
+        await api.put(`/exercises/${exerciseIdStr}`, payload);
+      } else {
+        if (!chapterIdStr) {
+          Alert.alert("Error", "Chapter ID is missing.");
+          return;
+        }
+
+        await api.post("/exercises", {
+          ...payload,
+          chapterId: parseInt(chapterIdStr),
+        });
+      }
+
+      Alert.alert("Success", "Exercise saved successfully.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (err) {
+      console.error("Error saving exercise", err);
+      Alert.alert("Error", "Failed to save exercise.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!loaded) return null; 
-
   return (
-    <BackgroundWrapper>
+    <BackgroundWrapper nav={true}>
       <ScrollView contentContainerStyle={styles.container}>
         <ReturnButton />
         <View style={styles.formBox}>
-          <Text style={styles.header}>Create an exercise</Text>
+          <Text style={styles.header}>
+            {isViewMode ? "View Exercise" : exerciseIdStr ? "Edit Exercise" : "Create Exercise"}
+          </Text>
 
-          {/* Title Field */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Title:</Text>
             <TextInput
-              style={styles.input}
+              placeholder="Enter title"
               value={title}
               onChangeText={setTitle}
-              placeholder="ENTER TITLE"
-              placeholderTextColor="#ccc"
+              style={styles.input}
+              editable={!isViewMode}
             />
           </View>
 
-          {/* Chapter Select Dropdown */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Chapter:</Text>
-            <TouchableOpacity
-              style={styles.select}
-              onPress={() => setShowChapterDropdown(!showChapterDropdown)}
-            >
-              <Text style={styles.selectText}>{chapter}</Text>
-            </TouchableOpacity>
-            {showChapterDropdown && (
-              <View style={styles.dropdown}>
-                {chapterOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => {
-                      setChapter(option);
-                      setShowChapterDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownText}>{option}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <Text style={styles.label}>Description:</Text>
+            <TextInput
+              placeholder="Enter description"
+              value={description}
+              onChangeText={setDescription}
+              style={[styles.input, styles.textArea]}
+              multiline
+              editable={!isViewMode}
+            />
           </View>
 
-
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Exercise:</Text>
-            <Text style={[styles.input, styles.staticInput]}>{exercise}</Text>
+            <Text style={styles.label}>Stars (0-5):</Text>
+            <TextInput
+              placeholder="Enter stars"
+              value={stars}
+              onChangeText={setStars}
+              style={styles.input}
+              keyboardType="number-pad"
+              editable={!isViewMode}
+            />
           </View>
 
-
-
           <View style={styles.formGroup}>
-            <Text style={styles.label}>DIFFICULTY:</Text>
-            <View style={styles.stars}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <TouchableOpacity key={i} onPress={() => setDifficulty(i)}>
-                  <Text style={styles.star}>{i <= difficulty ? '★' : '☆'}</Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.label}>Visible To:</Text>
+            <View style={styles.selectContainer}>
+              <TouchableOpacity
+                style={styles.selectButton}
+                onPress={() => {
+                  Alert.alert(
+                    "Select Visibility",
+                    "Choose who can see this exercise",
+                    [
+                      {
+                        text: "All Users",
+                        onPress: () => setVisibleTo("ALL")
+                      },
+                      {
+                        text: "Teachers Only",
+                        onPress: () => setVisibleTo("TEACHERS_ONLY")
+                      }
+                    ]
+                  );
+                }}
+                disabled={isViewMode}
+              >
+                <Text style={styles.selectButtonText}>
+                  {visibleTo === "ALL" ? "All Users" : "Teachers Only"}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Difficulty (1-5):</Text>
+            <TextInput
+              placeholder="Enter difficulty"
+              value={difficulty}
+              onChangeText={setDifficulty}
+              style={styles.input}
+              keyboardType="number-pad"
+              editable={!isViewMode}
+            />
+          </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Visible to:</Text>
-            <TouchableOpacity
-              style={styles.select}
-              onPress={() => setShowVisibleToDropdown(!showVisibleToDropdown)}
-            >
-              <Text style={styles.selectText}>{visibleTo}</Text>
-            </TouchableOpacity>
-            {showVisibleToDropdown && (
-              <View style={styles.dropdown}>
-                {visibleToOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => {
-                      setVisibleTo(option);
-                      setShowVisibleToDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownText}>{option}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <Text style={styles.label}>Order:</Text>
+            <TextInput
+              placeholder="Enter order"
+              value={order}
+              onChangeText={setOrder}
+              style={styles.input}
+              keyboardType="number-pad"
+              editable={!isViewMode}
+            />
           </View>
 
-          {/* Create Button */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
-              <Text style={styles.createText}>＋ Create</Text>
-            </TouchableOpacity>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Correct Answer:</Text>
+            <TextInput
+              placeholder="Enter the correct answer"
+              value={answer}
+              onChangeText={setAnswer}
+              style={styles.input}
+              keyboardType="number-pad"
+              editable={!isViewMode}
+            />
           </View>
+
+          {!isViewMode && (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveExercise}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? "Saving..." : exerciseIdStr ? "Save Changes" : "Create Exercise"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
     </BackgroundWrapper>
@@ -208,60 +276,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DDD',
   },
-  staticInput: {
-
-    paddingVertical: 12,
-  },
-  select: {
-
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    justifyContent: 'center',
-  },
-  selectText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  dropdown: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    marginTop: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 8,
-  },
-  stars: {
-    flexDirection: 'row',
-  },
-  star: {
-    fontSize: 20,
-    color: '#FFD700',
-    marginRight: 4,
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 30,
   },
-  createButton: {
-    backgroundColor: '#6ECE71',
+  saveButton: {
+    backgroundColor: '#FF8B45',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
   },
-  createText: {
+  buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  selectContainer: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  selectButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  selectButtonText: {
+    fontSize: 16,
+    color: '#333',
   },
 });

@@ -1,13 +1,24 @@
-import { Stack } from "expo-router";
+import { Slot, Redirect } from "expo-router";
 import { AuthProvider } from '@/context/AuthContext';
-import { RouteGuard } from './components/RouteGuard';
+import { useEffect } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function Layout() {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
     <AuthProvider>
-      <RouteGuard>
-        <Stack screenOptions={{ headerShown: false }} />
-      </RouteGuard>
+      <Slot />
     </AuthProvider>
   );
+}
+
+// This ensures the root route redirects to /index
+export function ErrorBoundary() {
+  return <Redirect href="/index" />;
 }

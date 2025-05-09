@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   StyleSheet,
@@ -11,24 +11,30 @@ import {
 } from "react-native";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
 import ReturnButton from "@/app/components/ui/ReturnButton";
+import api from "@/services/api";
 
 const { width } = Dimensions.get("window");
-
-const students = [
-  { name: "John Doe" },
-  { name: "Jane Doe" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-  { name: "Person X" },
-];
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("students");
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await api.get("/users/students");
+        setStudents(response.data);
+      } catch (err) {
+        console.error("Failed to fetch students", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
 
   return (
     <BackgroundWrapper nav={true}>
@@ -55,27 +61,41 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.grid}>
-          {students.map((student, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => router.push("/teacher/StudentDetailScreen")}
-            >
-              <TouchableOpacity style={styles.avatar}>
-                <Image
-                  source={require("@/assets/images/avatar.png")}
-                  style={styles.avatar}
-                />
+        {loading ? (
+          <View style={styles.centered}>
+            <Text style={styles.loadingText}>Loading students...</Text>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {students.map((student) => (
+              <TouchableOpacity
+                key={student.id}
+                style={styles.card}
+                onPress={() =>
+                  router.push({
+                    pathname: "/teacher/StudentDetailScreen",
+                    params: {
+                      studentId: student.id.toString(),
+                      studentName: student.name,
+                    },
+                  })
+                }
+              >
+                <TouchableOpacity style={styles.avatar}>
+                  <Image
+                    source={require("@/assets/images/avatar.png")}
+                    style={styles.avatar}
+                  />
+                </TouchableOpacity>
+                <View style={styles.infoText}>
+                  <Text style={styles.name}>{student.name}</Text>
+                  <Text style={styles.label}>Exercise</Text>
+                  <Text style={styles.label}>Success Rate</Text>
+                </View>
               </TouchableOpacity>
-              <View style={styles.infoText}>
-                <Text style={styles.name}>{student.name}</Text>
-                <Text style={styles.label}>Exercise</Text>
-                <Text style={styles.label}>Success Rate</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </BackgroundWrapper>
   );
@@ -145,5 +165,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: "black",
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 50,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#555",
   },
 });

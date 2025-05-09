@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,26 @@ import {
   SafeAreaView,
   Dimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Redirect } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
 import { useFonts } from "expo-font";
+import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
 export default function Index() {
   const router = useRouter();
+  const { user } = useAuth();
   const [fontsLoaded] = useFonts({
     "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
   });
+
+  // If user is already logged in, redirect to their dashboard
+  if (user) {
+    return <Redirect href={user.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList'} />;
+  }
+
   return (
     <BackgroundWrapper nav={false}>
       <SafeAreaView style={styles.innerContainer}>

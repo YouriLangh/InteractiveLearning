@@ -6,11 +6,11 @@ interface AuthContextType {
     user: { id: number; role: string } | null;
     isLoading: boolean;
     login: (
-      email: string, 
-      password: string, 
+      name: string, 
+      code: string, 
       role: 'STUDENT' | 'TEACHER'
-    ) => Promise<{ id: number; role: string }>; 
-    signup: (payload: { name: string; email: string; password: string; role: string }) => Promise<void>;
+    ) => Promise<{ token: string; user: { id: number; name: string; role: string } }>; 
+    signup: (payload: { name: string; code: string; role: string }) => Promise<void>;
     logout: () => Promise<void>;
   }
     
@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<{ id: number; role: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -28,45 +27,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userData = await authService.getCurrentUser();
         setUser(userData);
         setIsLoading(false);
-        
-        if (!isInitialized) {
-          setIsInitialized(true);
-          if (!userData) {
-            router.replace('/auth/LoginScreen');
-          } else {
-            router.replace(userData.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList');
-          }
-        }
       } catch (error) {
         console.error('Auth check error:', error);
         setIsLoading(false);
       }
     };
     checkAuth();
-  }, [router, isInitialized]);
+  }, []);
   
   const handleLogin = async (
-    email: string,
-    password: string,
+    name: string,
+    code: string,
     role: 'STUDENT' | 'TEACHER'
   ) => {
     try {
-      const userData = await authService.login(email, password, role);
+      const response = await authService.login(name, code, role);
       setUser({
-        id: userData.id,
-        role: userData.role,
+        id: response.user.id,
+        role: response.user.role,
       });
-      return userData;
+      return response;
     } catch (error) {
       setUser(null); 
       await authService.logout();
       throw error; 
     }
   };
+
   const handleSignup = async (payload: { 
     name: string; 
-    email: string; 
-    password: string; 
+    code: string; 
     role: string 
   }) => {
     try {
@@ -84,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
-    router.replace('/auth/LoginScreen');
+    router.replace('/');
   };
   
   return (
