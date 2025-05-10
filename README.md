@@ -64,7 +64,7 @@ Normally the app should open automatically on your connected device after the ap
    In `StudentLearnScreen.tsx`, update the IP address to match the one shown by the IP Webcam app.
 
 5. **Note for testing**:  
-   The metal rod used during tests was approximately **22 cm** long.
+   The metal rod on the tripod used during tests was approximately **22 cm** long.
 
 ## ⚙️ Prerequisites
 

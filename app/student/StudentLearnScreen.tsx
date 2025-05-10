@@ -388,7 +388,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     left: "25%",
-    // transform: [{ translateX: "-50%" }],
     opacity: 0.7,
 
     paddingRight: 40,
