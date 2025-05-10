@@ -53,6 +53,13 @@ In the output, you'll find options to open the app in:
 
 Normally the app should open automatically on your connected device after the apk is installed. If not, pressing R in the terminal will refresh the app if an error occurred in the app. Pressing A will open the app on the android device again.
 
+5. To setup the video streaming service:
+   Download the IP Webcam app
+   Video resolution: 960x720
+   photo resolution: 1440x1440 (to ensure users can rotate their phone without affecting the CV)
+   In the top right you can start a local server which shows which ip the server is streaming on. Then in StudentLearnScreen.tsx you can alter the ip as needed
+   For the tests i had the metal rod at a size of ~22cm
+
 ---
 
 ## ⚙️ Prerequisites

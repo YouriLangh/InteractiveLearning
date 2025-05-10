@@ -15,13 +15,7 @@ import Sound from "react-native-sound";
 import RNFS from "react-native-fs";
 import axios from "axios";
 import { useRouter } from "expo-router";
-import Constants from "expo-constants";
-import ReturnButton from "../components/ui/ReturnButton";
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-} from "react-native-vision-camera";
+
 import HapticFeedback from "react-native-haptic-feedback";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -34,14 +28,8 @@ export default function StudentLearnScreen() {
   const { chapterId, exerciseNr, id, title, stars, answer } =
     useLocalSearchParams();
   const router = useRouter();
-  const device = useCameraDevice("back");
-  const formats = device?.formats;
-  const bestFormat = formats?.find(
-    (format) => format.photoWidth === 1280 && format.photoHeight === 960
-  );
-  const camera = useRef<Camera>(null);
+
   const [isSolving, setIsSolving] = useState(false);
-  const { hasPermission, requestPermission } = useCameraPermission();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [showSolveDialogue, setShowSolveDialogue] = useState(false);
   const [isLoading, setisLoading] = useState(false);
@@ -115,16 +103,14 @@ export default function StudentLearnScreen() {
       }
     );
   };
-
-  const SNAPSHOT_URL = "http://192.168.129.2:8080/photo.jpg"; // IP Webcam snapshot endpoint
-  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve"; // Your backend endpoint
+  const CAMERA_SERVER_URL = "http://192.168.129.2:8080";
+  const SNAPSHOT_URL = CAMERA_SERVER_URL + "/photo.jpg"; // IP Webcam snapshot endpoint
+  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve";
   useEffect(() => {
-    console.log(isSolving);
+    console.log("Are we in solving mode? ", isSolving);
     if (!isSolving || showPreview || attemptMade || isFrozen) return;
-
     const interval = setInterval(async () => {
       try {
-        setisLoading(true);
         const res = await fetch(`${SNAPSHOT_URL}?cacheBust=${Date.now()}`);
         const blob = await res.blob();
 
@@ -139,11 +125,8 @@ export default function StudentLearnScreen() {
           reader.readAsDataURL(blob);
         });
 
-        // Save to local file
-        const filename = `snapshot-${Date.now()}.jpg`;
-        const path = `${RNFS.DocumentDirectoryPath}/snapshot-latest.jpg`;
-        await RNFS.writeFile(path, base64, "base64");
-
+        setisLoading(true);
+        setIsSolving(false);
         // Send to backend
         const response = await axios.post(BACKEND_URL, {
           image: base64,
@@ -185,17 +168,8 @@ export default function StudentLearnScreen() {
     return () => clearInterval(interval);
   }, [isSolving, showPreview, attemptMade, isFrozen]);
 
-  if (device == null || !hasPermission) {
-    return (
-      <Text style={StyleSheet.absoluteFill} onPress={requestPermission}>
-        Give Permission
-      </Text>
-    );
-  }
-
   return (
     <BackgroundWrapper nav={true}>
-      <ReturnButton />
       <View style={{ flex: 1, alignItems: "center", paddingTop: 30 }}>
         <Text
           style={{
@@ -230,7 +204,7 @@ export default function StudentLearnScreen() {
         >
           {!isFrozen ? (
             <WebView
-              source={{ uri: "http://192.168.129.2:8080/video" }}
+              source={{ uri: CAMERA_SERVER_URL + "/video" }}
               style={{ flex: 1 }}
               javaScriptEnabled
             />
@@ -311,14 +285,12 @@ export default function StudentLearnScreen() {
               </View>
             </View>
           )}
-        </Animated.View>
-
-        {/* Buttons */}
-        <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={[
               styles.captureButton,
-              { backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881" },
+              {
+                backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881",
+              },
             ]}
             onPress={() => {
               if (attemptMade && showPreview && !isLoading) {
@@ -348,14 +320,14 @@ export default function StudentLearnScreen() {
             <Text
               style={{
                 color: "white",
-                fontSize: 28,
+                fontSize: 24,
                 fontFamily: "Poppins-Regular",
               }}
             >
               {attemptMade ? "Try Again" : "Solve automatically!"}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {showSolveDialogue && (
           <Modal
@@ -401,8 +373,8 @@ export default function StudentLearnScreen() {
 
 const styles = StyleSheet.create({
   cameraContainer: {
-    width: "65%",
-    height: "60%",
+    width: "55%",
+    height: "80%",
     borderRadius: 5,
     overflow: "hidden",
   },
@@ -412,21 +384,21 @@ const styles = StyleSheet.create({
     color: "rgba(186, 4, 4, 100)",
     fontSize: 24,
   },
-  buttonsContainer: {
-    marginTop: 30,
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "40%",
-  },
   captureButton: {
+    position: "absolute",
+    bottom: 20,
+    left: "25%",
+    // transform: [{ translateX: "-50%" }],
+    opacity: 0.7,
+
     paddingRight: 40,
-    height: 80,
-    zIndex: 10,
+    height: 70,
+    zIndex: 100,
     borderRadius: 10,
     display: "flex",
     flexDirection: "row",
-    backgroundColor: "#99D881",
     alignItems: "center",
+    backgroundColor: "#99D881",
   },
   dialogue: {
     display: "flex",
