@@ -6,7 +6,6 @@ import sys
 
 # Load the image
 image_path = sys.argv[1]
-image_path = "uploaded_image.png"
 image = cv2.imread(image_path)
 
 # Convert to grayscale

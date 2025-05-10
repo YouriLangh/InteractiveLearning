@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import SnapshotViewer from "@/hooks/useAutoCapture";
 import {
   StyleSheet,
   Text,
@@ -9,6 +10,7 @@ import {
   Animated,
   Image,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import Sound from "react-native-sound";
 import RNFS from "react-native-fs";
 import axios from "axios";
@@ -39,6 +41,7 @@ export default function StudentLearnScreen() {
     (format) => format.photoWidth === 1280 && format.photoHeight === 960
   );
   const camera = useRef<Camera>(null);
+  const [isSolving, setIsSolving] = useState(false);
   const { hasPermission, requestPermission } = useCameraPermission();
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [showSolveDialogue, setShowSolveDialogue] = useState(false);
@@ -49,6 +52,8 @@ export default function StudentLearnScreen() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const [detectedDots, setDetectedDots] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
   const triggerShake = () => {
     Animated.sequence([
       Animated.timing(shakeAnim, {
@@ -112,53 +117,77 @@ export default function StudentLearnScreen() {
     );
   };
 
-  async function takeAndUploadSnapshot() {
-    setisLoading(true);
-    const photo = await camera.current?.takePhoto();
-    if (!photo?.path) return setisLoading(false);
+  const SNAPSHOT_URL = "http://192.168.129.2:8080/photo.jpg"; // IP Webcam snapshot endpoint
+  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve"; // Your backend endpoint
+  useEffect(() => {
+    console.log(isSolving);
+    if (!isSolving || showPreview || attemptMade || isFrozen) return;
 
-    const base64Image = await RNFS.readFile(photo.path, "base64");
+    const interval = setInterval(async () => {
+      try {
+        setisLoading(true);
+        const res = await fetch(`${SNAPSHOT_URL}?cacheBust=${Date.now()}`);
+        const blob = await res.blob();
 
-    try {
-      const response = await axios.post(
-        "http://192.168.129.9:5000/api/upload/solve",
-        {
-          image: base64Image,
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(",")[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        // Save to local file
+        const filename = `snapshot-${Date.now()}.jpg`;
+        const path = `${RNFS.DocumentDirectoryPath}/snapshot-latest.jpg`;
+        await RNFS.writeFile(path, base64, "base64");
+        setSnapshotVersion(Date.now()); // triggers re-render in SnapshotViewer
+
+        console.log(`Saved snapshot to: ${path}`);
+
+        // Send to backend
+        const response = await axios.post(BACKEND_URL, {
+          image: base64,
           fileType: "image/jpeg",
           answer: answer,
-        }
-      );
-      setisLoading(false);
-      setDetectedDots(response.data.darkSpotCount);
-      const solved = response.data.solved;
-      setImageBase64(response.data.processedImage);
-      setTimeout(() => {
-        if (solved) {
-          setShowSolveDialogue(true);
-          triggerDialogueShake;
-          vibrateFeedback("correct");
-          correctSound.play();
-          setIsFrozen(true); // freeze the camera
-          setTimeout(() => {
-            setShowSolveDialogue(false);
-            setIsFrozen(false);
-            router.push({
-              pathname: "/student/StudentExerciseList",
-            });
-          }, 1500);
-        } else {
-          vibrateFeedback("wrong");
-          triggerShake();
-          setIsFrozen(true);
-          setShowPreview(true);
-          setAttemptMade(true); // Mark that an attempt has been made
-        }
-      }, 150);
-    } catch (error) {
-      console.error("Upload failed:", error);
-    }
-    setisLoading(false);
-  }
+        });
+
+        console.log("Image sent to backend");
+        setisLoading(false);
+        setIsFrozen(true); // freeze the camera
+        setDetectedDots(response.data.darkSpotCount);
+        const solved = response.data.solved;
+        setImageBase64(response.data.processedImage);
+        setTimeout(() => {
+          if (solved) {
+            setShowSolveDialogue(true);
+            triggerDialogueShake;
+            vibrateFeedback("correct");
+            correctSound.play();
+            setTimeout(() => {
+              setShowSolveDialogue(false);
+              setIsFrozen(false);
+              router.push({
+                pathname: "/student/StudentExerciseList",
+              });
+            }, 1500);
+          } else {
+            vibrateFeedback("wrong");
+            triggerShake();
+            setShowPreview(true);
+            setAttemptMade(true); // Mark that an attempt has been made
+          }
+        }, 150);
+      } catch (err) {
+        console.error("Frame capture or upload failed:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isSolving, showPreview, attemptMade, isFrozen]);
 
   if (device == null || !hasPermission) {
     return (
@@ -202,18 +231,25 @@ export default function StudentLearnScreen() {
             },
           ]}
         >
-          <Camera
-            style={[StyleSheet.absoluteFill]}
-            device={device}
-            isActive={!isFrozen}
-            photo={true}
-            ref={camera}
-            format={bestFormat ?? undefined}
-            photoQualityBalance="speed"
-            resizeMode="contain"
-            outputOrientation="device"
-            enableFpsGraph={false}
-          />
+          {!isFrozen ? (
+            <WebView
+              source={{ uri: "http://192.168.129.2:8080/video" }}
+              style={{ flex: 1 }}
+              javaScriptEnabled
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "black",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "white", fontSize: 20 }}>Paused</Text>
+            </View>
+          )}
+
           {imageBase64 && showPreview && (
             <View
               style={[
@@ -285,9 +321,10 @@ export default function StudentLearnScreen() {
                 setShowPreview(false);
                 setIsFrozen(false);
                 setAttemptMade(false); // Reset attempt
+                setIsSolving(false);
               } else {
                 // Proceed with the first attempt
-                takeAndUploadSnapshot();
+                setIsSolving(!isSolving);
               }
             }}
           >
@@ -310,7 +347,7 @@ export default function StudentLearnScreen() {
                 fontFamily: "Poppins-Regular",
               }}
             >
-              {attemptMade ? "Try Again" : "Try it!"}
+              {attemptMade ? "Try Again" : "Solve automatically!"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -353,6 +390,7 @@ export default function StudentLearnScreen() {
           </Modal>
         )}
       </View>
+      <SnapshotViewer version={snapshotVersion} />
     </BackgroundWrapper>
   );
 }
