@@ -1,9 +1,3 @@
-# 📱 BlockEd App (Frontend Only)
-
-A learning app built with **React Native + Expo**, designed to run **natively** (not via Expo Go).
-
----
-
 # Welcome to BlockEd 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).  
@@ -53,14 +47,24 @@ In the output, you'll find options to open the app in:
 
 Normally the app should open automatically on your connected device after the apk is installed. If not, pressing R in the terminal will refresh the app if an error occurred in the app. Pressing A will open the app on the android device again.
 
-5. To setup the video streaming service:
-   Download the IP Webcam app
-   Video resolution: 960x720
-   photo resolution: 1440x1440 (to ensure users can rotate their phone without affecting the CV)
-   In the top right you can start a local server which shows which ip the server is streaming on. Then in StudentLearnScreen.tsx you can alter the ip as needed
-   For the tests i had the metal rod at a size of ~22cm
+## Setting Up the Video Streaming Service
 
----
+1. **Install the IP Webcam app** on your Android device.
+
+2. **Configure the following settings** in the app:
+
+   - **Video resolution:** `960x720`
+   - **Photo resolution:** `1440x1440`  
+     _(This ensures consistent computer vision performance, even when the phone is rotated.)_
+
+3. **Start the local server** by tapping the play button in the top-right corner of the app.  
+   The streaming IP address will appear at the bottom of the screen.
+
+4. **Update the IP in the application**:  
+   In `StudentLearnScreen.tsx`, update the IP address to match the one shown by the IP Webcam app.
+
+5. **Note for testing**:  
+   The metal rod used during tests was approximately **22 cm** long.
 
 ## ⚙️ Prerequisites
 
@@ -128,7 +132,7 @@ This project uses [file-based routing](https://docs.expo.dev/router/introduction
 
 ## Issues
 
-### Issue 1: Kotlin Issues
+### Issue 1: Build/Kotlin Issues
 
 If you have any issues such as Kotlin debug issues, perform:
 
@@ -137,6 +141,24 @@ cd android && gradlew clean
 ```
 
 If this doesn't work, remove the .gradle folder in the android folder and try the above command again.
+
+Alternatively:
+
+1. Delete the `android` folder.
+2. Delete the `.expo` folder.
+3. Run the following command to clean and rebuild:
+
+```bash
+npx expo prebuild --clean
+```
+
+4. Then run the app natively:
+
+```bash
+npx expo run:android
+```
+
+---
 
 ### Issue 2: Set your app's minSdk version to 26 and try again
 
@@ -156,26 +178,6 @@ cd android && gradlew clean
 
 Do not download this project in any OneDrive directory or in any deeply nested locations.  
 An example of a good path (no spaces) is `C:\NGUI\%PROJECT%`
-
----
-
-## Fixing Build Problems (React Native/Expo)
-
-If you run into any build problems:
-
-1. Delete the `android` folder.
-2. Delete the `.expo` folder.
-3. Run the following command to clean and rebuild:
-
-```bash
-npx expo prebuild --clean
-```
-
-4. Then run the app natively:
-
-```bash
-npx expo run:android
-```
 
 ---
 
