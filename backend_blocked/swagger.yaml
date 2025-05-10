@@ -26,17 +26,24 @@ components:
           format: int64
         name:
           type: string
-        email:
+        code:
           type: string
-          format: email
         role:
           type: string
           enum: [STUDENT, TEACHER]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
         - name
-        - email
+        - code
         - role
+        - createdAt
+        - updatedAt
 
     Category:
       type: object
@@ -179,19 +186,17 @@ paths:
               properties:
                 name:
                   type: string
-                email:
+                  description: User's name
+                code:
                   type: string
-                  format: email
-                password:
-                  type: string
-                  format: password
+                  description: User's unique code
                 role:
                   type: string
                   enum: [STUDENT, TEACHER]
+                  description: User's role in the system
               required:
                 - name
-                - email
-                - password
+                - code
                 - role
       responses:
         '200':
@@ -204,7 +209,13 @@ paths:
                   message:
                     type: string
         '400':
-          description: Email already in use
+          description: Name and code combination already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -222,15 +233,15 @@ paths:
             schema:
               type: object
               properties:
-                email:
+                name:
                   type: string
-                  format: email
-                password:
+                  description: User's name
+                code:
                   type: string
-                  format: password
+                  description: User's unique code
               required:
-                - email
-                - password
+                - name
+                - code
       responses:
         '200':
           description: Login successful
@@ -241,10 +252,17 @@ paths:
                 properties:
                   token:
                     type: string
+                    description: JWT token for authentication
                   user:
                     $ref: '#/components/schemas/User'
         '401':
-          description: Invalid credentials
+          description: Invalid name or code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -1195,6 +1213,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StudentProgress'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/progress/{studentId}/success-rate:
+    parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Get a student's overall success rate
+      tags:
+        - Student Progress
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success rate retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId:
+                    type: integer
+                    format: int64
+                  successRate:
+                    type: number
+                    format: float
+                  totalExercises:
+                    type: integer
+                  solvedExercises:
+                    type: integer
+                required:
+                  - studentId
+                  - successRate
+                  - totalExercises
+                  - solvedExercises
+        '404':
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
           content:

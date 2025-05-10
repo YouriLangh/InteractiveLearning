@@ -1,21 +1,21 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware';
-
-// Import controller functions
-const {
+import {
   updateUserProfile,
-  getUserProfile
-} = require('../controllers/user.controller');
+  getUserProfile,
+  getAllStudents
+} from '../controllers/user.controller';
 
 const router = Router();
 
 // Protected routes (require authentication)
-router.use(authenticateToken as any);
+router.use('/', authenticateToken as RequestHandler);
 
-// Get user profile
-router.get('/profile', getUserProfile);
+// User profile routes
+router.get('/profile', getUserProfile as RequestHandler);
+router.put('/profile', updateUserProfile as RequestHandler);
 
-// Update user profile
-router.put('/profile', updateUserProfile);
+// Teacher-only routes
+router.get('/students', getAllStudents as RequestHandler);
 
 export default router; 

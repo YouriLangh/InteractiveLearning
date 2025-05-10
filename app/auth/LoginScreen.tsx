@@ -16,12 +16,21 @@ import ReturnButton from "@/app/components/ui/ReturnButton";
 import { useAuth } from "@/context/AuthContext";
 import * as ScreenOrientation from "expo-screen-orientation";
 
+interface LoginResponse {
+  token: string;
+  user: {
+    id: number;
+    name: string;
+    role: string;
+  };
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
   const uiRole = params.role?.toString()?.toUpperCase() || "STUDENT";
   const isTeacherUI = uiRole === "TEACHER";
 
@@ -63,27 +72,32 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const user = await login(
-        email,
-        password,
-        uiRole as "STUDENT" | "TEACHER"
-      );
+      const response = await login(name, code, uiRole as "STUDENT" | "TEACHER");
 
-      if (user.role === "TEACHER") {
+      // Ensure we have a valid response with user data
+      if (!response || !response.user || !response.user.role) {
+        throw new Error('Invalid user data received');
+      }
+
+      const userRole = response.user.role.toUpperCase();
+      if (userRole === "TEACHER") {
         router.replace("/teacher/ProfileScreen");
-      } else {
+      } else if (userRole === "STUDENT") {
         router.replace("/student/StudentExerciseList");
+      } else {
+        throw new Error('Invalid user role');
       }
     } catch (error: any) {
       console.error("Login failed:", error);
       alert(error?.message || "Login failed. Please try again.");
-      setEmail("");
-      setPassword("");
+      setName("");
+      setCode("");
     }
   };
 
   return (
     <BackgroundWrapper nav={false}>
+      <ReturnButton />
       <View style={[newStyles.container]}>
         <View style={newStyles.rowContainer}>
           <View style={newStyles.leftSection}>
@@ -134,32 +148,29 @@ export default function LoginScreen() {
             )}
             <View style={{ width: "100%" }}>
               <TextInput
-                placeholder="Enter your email"
+                placeholder="Enter your name"
                 style={newStyles.input}
                 placeholderTextColor="#ccc"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
+                value={name}
+                onChangeText={setName}
               />
               <TextInput
-                placeholder="Enter your password"
+                placeholder="Enter your code"
                 style={newStyles.input}
                 placeholderTextColor="#ccc"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
+                value={code}
+                onChangeText={setCode}
               />
             </View>
             <TouchableOpacity
               style={[
                 newStyles.goButton,
                 {
-                  backgroundColor: email && password ? "#85E585" : "#E0E0E0",
+                  backgroundColor: name && code ? "#85E585" : "#E0E0E0",
                 },
               ]}
               onPress={handleLogin}
-              disabled={!email || !password}
+              disabled={!name || !code}
             >
               <Text style={newStyles.goButtonText}>GO</Text>
             </TouchableOpacity>

@@ -20,49 +20,27 @@ const { width, height } = Dimensions.get('window');
 const isSmallScreen = width < 350 || height < 400;
 const scaleFactor = Math.min(width / 375, 1.2);
 
-
 export default function SignupScreen() {
   const router = useRouter();
   const { signup } = useAuth();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [code, setCode] = useState('');
   const [role, setRole] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
 
   const handleSignup = async () => {
     setError('');
     setIsLoading(true);
     
-    if (!name || !email || !password || !confirmPassword) {
-      setError('All fields are required');
-      setIsLoading(false);
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Invalid email format');
-      setIsLoading(false);
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (!name || !code) {
+      setError('Name and Code are required');
       setIsLoading(false);
       return;
     }
 
     try {
-      await signup({ name, email, password, role });
+      await signup({ name, code, role });
       alert('Account created successfully! Please login.');
       router.replace('/auth/LoginScreen');
     } catch (err: any) {
@@ -73,7 +51,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <BackgroundWrapper>
+    <BackgroundWrapper nav={false}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -86,46 +64,26 @@ export default function SignupScreen() {
           >
             <ReturnButton />
             <Text style={styles.title}>Create Account</Text>
-  
+
             {error && <Text style={styles.errorText}>{error}</Text>}
-  
+
             <View style={styles.formContainer}>
               <TextInput
-                placeholder="Full Name"
+                placeholder="Name"
                 style={styles.input}
                 placeholderTextColor="#666"
                 value={name}
                 onChangeText={setName}
               />
-  
+
               <TextInput
-                placeholder="Email"
+                placeholder="Code"
                 style={styles.input}
                 placeholderTextColor="#666"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
+                value={code}
+                onChangeText={setCode}
               />
-  
-              <TextInput
-                placeholder="Password"
-                style={styles.input}
-                placeholderTextColor="#666"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-  
-              <TextInput
-                placeholder="Confirm Password"
-                style={styles.input}
-                placeholderTextColor="#666"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-  
+
               <View style={styles.roleContainer}>
                 <TouchableOpacity
                   style={[styles.roleButton, role === 'STUDENT' && styles.selectedRole]}
@@ -133,7 +91,7 @@ export default function SignupScreen() {
                 >
                   <Text style={styles.roleText}>Student</Text>
                 </TouchableOpacity>
-  
+
                 <TouchableOpacity
                   style={[styles.roleButton, role === 'TEACHER' && styles.selectedRole]}
                   onPress={() => setRole('TEACHER')}
@@ -141,14 +99,14 @@ export default function SignupScreen() {
                   <Text style={styles.roleText}>Teacher</Text>
                 </TouchableOpacity>
               </View>
-  
+
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleSignup}
               >
                 <Text style={styles.buttonText}>Create Account</Text>
               </TouchableOpacity>
-  
+
               <TouchableOpacity
                 style={styles.loginLink}
                 onPress={() => router.push('/auth/LoginScreen')}
@@ -163,105 +121,105 @@ export default function SignupScreen() {
       </KeyboardAvoidingView>
     </BackgroundWrapper>
   );
-  }
+}
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#fff7ec',
-      paddingHorizontal: width > 500 ? '15%' : Math.max(width * 0.05, 10),
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingBottom: 30,
-      paddingTop: 10,
-    },
-    formContainer: {
-      maxWidth: 500,
-      width: '100%',
-      alignSelf: 'center',
-      paddingTop: isSmallScreen ? 10 : 20,
-      justifyContent: 'center',
-    },
-    title: {
-      fontSize: isSmallScreen ? scaleFactor * 22 : scaleFactor * 26,
-      color: '#F9A836',
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginVertical: height < 400 ? 10 : 20,
-    },
-    input: {
-      backgroundColor: 'white',
-      borderRadius: 10,
-      paddingVertical: height < 400 ? 10 : 12,
-      paddingHorizontal: 15,
-      marginBottom: height < 400 ? 8 : 12,
-      color: '#333',
-      fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
-      borderWidth: 1,
-      borderColor: '#F9A83620',
-      minHeight: height < 400 ? 40 : 50,
-    },
-    button: {
-      backgroundColor: '#F9A836',
-      padding: height < 400 ? 12 : 15,
-      borderRadius: 10,
-      alignItems: 'center',
-      marginTop: height < 400 ? 15 : 20,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      minHeight: height < 400 ? 45 : 50,
-    },
-    buttonText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
-    },
-    roleContainer: {
-      flexDirection: 'row',
-      gap: width < 400 ? 8 : 10,
-      marginVertical: height < 400 ? 8 : 10,
-    },
-    roleButton: {
-      flex: 1,
-      padding: height < 400 ? 10 : 12,
-      borderRadius: 8,
-      alignItems: 'center',
-      backgroundColor: '#F9A83610',
-      borderWidth: 1,
-      borderColor: '#F9A83630',
-      minHeight: 40,
-    },
-    selectedRole: {
-      backgroundColor: '#F9A83620',
-      borderColor: '#F9A836',
-    },
-    roleText: {
-      color: '#F9A836',
-      fontWeight: '500',
-      fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
-    },
-    errorText: {
-      color: '#D32F2F',
-      textAlign: 'center',
-      marginBottom: height < 400 ? 10 : 15,
-      fontSize: isSmallScreen ? 12 : 14,
-    },
-    loginLink: {
-      marginTop: height < 400 ? 15 : 20,
-      alignItems: 'center',
-    },
-    loginText: {
-      color: '#666',
-      fontSize: isSmallScreen ? 12 : 14,
-    },
-    loginLinkText: {
-      color: '#F9A836',
-      fontWeight: 'bold',
-      textDecorationLine: 'underline',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff7ec',
+    paddingHorizontal: width > 500 ? '15%' : Math.max(width * 0.05, 10),
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 30,
+    paddingTop: 10,
+  },
+  formContainer: {
+    maxWidth: 500,
+    width: '100%',
+    alignSelf: 'center',
+    paddingTop: isSmallScreen ? 10 : 20,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: isSmallScreen ? scaleFactor * 22 : scaleFactor * 26,
+    color: '#F9A836',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: height < 400 ? 10 : 20,
+  },
+  input: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingVertical: height < 400 ? 10 : 12,
+    paddingHorizontal: 15,
+    marginBottom: height < 400 ? 8 : 12,
+    color: '#333',
+    fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
+    borderWidth: 1,
+    borderColor: '#F9A83620',
+    minHeight: height < 400 ? 40 : 50,
+  },
+  button: {
+    backgroundColor: '#F9A836',
+    padding: height < 400 ? 12 : 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: height < 400 ? 15 : 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    minHeight: height < 400 ? 45 : 50,
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    gap: width < 400 ? 8 : 10,
+    marginVertical: height < 400 ? 8 : 10,
+  },
+  roleButton: {
+    flex: 1,
+    padding: height < 400 ? 10 : 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#F9A83610',
+    borderWidth: 1,
+    borderColor: '#F9A83630',
+    minHeight: 40,
+  },
+  selectedRole: {
+    backgroundColor: '#F9A83620',
+    borderColor: '#F9A836',
+  },
+  roleText: {
+    color: '#F9A836',
+    fontWeight: '500',
+    fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
+  },
+  errorText: {
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginBottom: height < 400 ? 10 : 15,
+    fontSize: isSmallScreen ? 12 : 14,
+  },
+  loginLink: {
+    marginTop: height < 400 ? 15 : 20,
+    alignItems: 'center',
+  },
+  loginText: {
+    color: '#666',
+    fontSize: isSmallScreen ? 12 : 14,
+  },
+  loginLinkText: {
+    color: '#F9A836',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+});
   

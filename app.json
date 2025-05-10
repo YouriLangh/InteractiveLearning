@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "fonts": ["./assets/fonts"],
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -42,13 +41,14 @@
           "backgroundColor": "#C0E8E0"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.129.9:5000/api"
+      "apiUrl": "http://192.168.1.2:5000/api"
     }
   }
 }

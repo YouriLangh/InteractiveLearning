@@ -13,7 +13,7 @@ interface SignupResponse {
     message: string;
   }
 
-interface LoginResponse {
+export interface LoginResponse {
   token: string;
   user: {
     id: number;
@@ -24,8 +24,7 @@ interface LoginResponse {
 
 interface SignupPayload {
   name: string;
-  email: string;
-  password: string;
+  code: string;
   role: 'STUDENT' | 'TEACHER';
 }
 
@@ -43,24 +42,39 @@ class AuthService {
         } catch (error) {
           const normalizedError = this.normalizeError(error);
           
-          if (normalizedError.message.toLowerCase().includes('email')) {
-            normalizedError.message = 'This email is already registered';
+          if (normalizedError.message.toLowerCase().includes('name') || normalizedError.message.toLowerCase().includes('code')) {
+            normalizedError.message = 'This name and code combination is already taken';
           }
           
           throw normalizedError;
         }
       }
       
-  async login(
-    email: string,
-    password: string,
-    role: 'STUDENT' | 'TEACHER'
-  ): Promise<LoginResponse['user']> {
+  async login(name: string, code: string, role: 'STUDENT' | 'TEACHER'): Promise<LoginResponse> {
     try {
-      const response = await api.post<LoginResponse>('/auth/login', { email, password, role });
+      console.log('Login request payload:', { name, code, role });
+      const response = await api.post<LoginResponse>('/auth/login', { name, code, role });
+      
+      console.log('Raw login response:', JSON.stringify(response.data, null, 2));
 
-      if (response.data.user.role !== role) {
-        throw new Error('Login failed');
+      // Check if we have a valid response with user data
+      if (!response.data) {
+        console.error('No response data received');
+        throw new Error('Invalid response from server');
+      }
+
+      if (!response.data.user) {
+        console.error('No user object in response:', response.data);
+        throw new Error('Invalid response from server');
+      }
+
+      if (!response.data.user.role) {
+        console.error('No role in user object:', response.data.user);
+        throw new Error('Invalid response from server');
+      }
+
+      if (response.data.user.role.toUpperCase() !== role.toUpperCase()) {
+        throw new Error('Invalid role for this account');
       }
     
       if (response.status >= 400) { 
@@ -76,9 +90,18 @@ class AuthService {
       await storeSecureValue('userRole', response.data.user.role);
       await storeSecureValue('userId', String(response.data.user.id));
       
-      return response.data.user;
+      // Return the user object directly since that's what the LoginScreen expects
+      return response.data;
     } catch (error) {
-      console.error('Login failed:', error);
+      if (error instanceof AxiosError) {
+        console.error('Login network error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('Login error:', error);
+      }
       throw this.normalizeError(error);
     }
   }
@@ -126,6 +149,6 @@ class AuthService {
     }
     return { message: 'Unknown error occurred' };
   }
-        }
+}
 
 export const authService = new AuthService();

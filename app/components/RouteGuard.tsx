@@ -1,34 +1,32 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
 
-const publicRoutes = ['/auth/LoginScreen', '/auth/SignupScreen', '/explore', '/'];
+const publicRoutes = ['/auth/LoginScreen', '/auth/SignupScreen', '/explore', '/', '/index'];
 
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const isPublicRoute = publicRoutes.includes(pathname);
-    const isLandingPage = pathname === '/';
-
-    if (!user && !isPublicRoute) {
-      // Redirect to login if trying to access protected route while not authenticated
-      router.replace('/auth/LoginScreen');
-    } else if (user && isLandingPage) {
-      // Redirect to appropriate dashboard if authenticated user tries to access landing page
-      router.replace(user.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList');
-    } else if (user && isPublicRoute && pathname !== '/explore') {
-      // Redirect to appropriate dashboard if trying to access other public routes while authenticated
-      router.replace(user.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList');
-    }
-  }, [user, isLoading, pathname, router]);
+  const isPublicRoute = publicRoutes.includes(pathname);
+  const isLandingPage = pathname === '/' || pathname === '/index';
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#F9A836" />
+      </View>
+    );
+  }
+
+  // Allow access to landing page and public routes
+  if (isLandingPage || isPublicRoute) {
+    return <>{children}</>;
+  }
+
+  // Block access to protected routes if not authenticated
+  if (!user) {
+    return null;
   }
 
   return <>{children}</>;

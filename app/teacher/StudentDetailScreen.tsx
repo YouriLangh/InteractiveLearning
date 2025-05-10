@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,108 +8,121 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import BackgroundWrapper from '@/app/components/BackgroundWrapper';
 import ReturnButton from '@/app/components/ui/ReturnButton';
-
+import api from '@/services/api';
 
 const { width } = Dimensions.get('window');
 
-
-const data = {
-  name: 'John',
-  avatarColor: '#FFD28E', 
-  chapters: [
-    {
-      title: 'Chapter 1: Numbers',
-      expanded: false,
-      exercises: [
-        {
-          id: 1,
-          title: 'Exercise 1: Make the number 21 using blocks.',
-          timeTaken: '13m20s',
-          hintsUsed: 10,
-          attempts: [false, false, false, true],
-        },
-        {
-          id: 2,
-          title: 'Exercise 2: Make the number 35 using blocks.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-        {
-          id: 3,
-          title: 'Exercise 3: Make the number 215 using blocks.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-      ],
-    },
-    {
-      title: 'Chapter 2: Addition',
-      expanded: false,
-      exercises: [
-        {
-          id: 1,
-          title: 'Exercise 1: Use blocks to solve 2 + 15.',
-          timeTaken: '10m45s',
-          hintsUsed: 5,
-          attempts: [false, true],
-        },
-        {
-          id: 2,
-          title: 'Exercise 2: Another addition problem.',
-          timeTaken: '',
-          hintsUsed: 0,
-          attempts: [],
-        },
-      ],
-    },
-  ],
-};
-
 export default function StudentDetailScreen() {
+  const router = useRouter();
+  const { studentId, studentName } = useLocalSearchParams();
+  const studentIdStr = Array.isArray(studentId) ? studentId[0] : studentId;
+  const [activeTab, setActiveTab] = useState('students');
 
-  const [chapters, setChapters] = useState(data.chapters);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
 
+  useEffect(() => {
+    const fetchStudentProgress = async () => {
+      if (!studentIdStr) return;
 
-  const toggleChapter = (index: number) => {
-    const updated = [...chapters];
-    updated[index].expanded = !updated[index].expanded;
-    setChapters(updated);
+      try {
+        const response = await api.get(`/progress/${studentIdStr}`);
+        setData(response.data);
+
+        // Default expand all chapters
+        const expandedMap: { [key: number]: boolean } = {};
+        response.data.chapters.forEach((chapter: any) => {
+          expandedMap[chapter.id] = true;
+        });
+        setExpandedChapters(expandedMap);
+      } catch (err) {
+        console.error("Failed to fetch student progress", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentProgress();
+  }, [studentIdStr]);
+
+  const toggleChapter = (chapterId: number) => {
+    setExpandedChapters((prev) => ({
+      ...prev,
+      [chapterId]: !prev[chapterId],
+    }));
   };
 
-  return (
-    <BackgroundWrapper>
-      <ScrollView contentContainerStyle={styles.container}>
-      <ReturnButton />
+  if (loading) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text style={styles.loadingText}>Loading student progress...</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
 
-        <View style={styles.topRow}>
-          <Image
-            source={require('@/assets/images/avatar.png')}
-            style={styles.avatar}
-          />
-          <Text style={styles.name}>{data.name}</Text>
-          <TouchableOpacity style={styles.printButton}>
-            <Text style={styles.printText}>Print Report</Text>
-          </TouchableOpacity>
+  if (!data || !data.chapters || data.chapters.length === 0) {
+    return (
+      <BackgroundWrapper nav={true}>
+        <View style={styles.centered}>
+          <Text style={styles.noDataText}>No progress or exercises found for this student yet.</Text>
+        </View>
+      </BackgroundWrapper>
+    );
+  }
+
+  return (
+    <BackgroundWrapper nav={true}>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <ReturnButton />
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={styles.tabButton} 
+              onPress={() => router.push('/teacher/ProfileScreen')}
+            >
+              <Text style={[styles.tabText, activeTab === 'students' && styles.activeTab]}>
+                Students
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.tabButton}
+              onPress={() => router.push('/teacher/ChapterScreen')}
+            >
+              <Text style={[styles.tabText, activeTab === 'chapters' && styles.activeTab]}>
+                Chapters
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.topRow}>
+            <Image
+              source={require('@/assets/images/avatar.png')}
+              style={styles.avatar}
+            />
+            <Text style={styles.name}>{studentName || "Student"}</Text>
+            <TouchableOpacity style={styles.printButton}>
+              <Text style={styles.printText}>Print Report</Text>
+            </TouchableOpacity>
+          </View>
 
-        {chapters.map((chapter, cIndex) => {
-          const isExpanded = chapter.expanded;
-          return (
-            <View key={cIndex} style={styles.chapterContainer}>
-
+          {data.chapters.map((chapter: any) => (
+            <View key={chapter.id} style={styles.chapterContainer}>
               <TouchableOpacity
                 style={styles.chapterHeader}
-                onPress={() => toggleChapter(cIndex)}
+                onPress={() => toggleChapter(chapter.id)}
               >
                 <Text style={styles.chapterTitle}>{chapter.title}</Text>
                 <Image
                   source={
-                    isExpanded
+                    expandedChapters[chapter.id]
                       ? require('@/assets/images/arrow-up.png')
                       : require('@/assets/images/arrow-down.png')
                   }
@@ -117,14 +130,13 @@ export default function StudentDetailScreen() {
                 />
               </TouchableOpacity>
 
-
-              {isExpanded && (
+              {expandedChapters[chapter.id] && (
                 <View style={styles.exercisesContainer}>
-                  {chapter.exercises.map((ex, eIndex) => {
-                    const isFirst = eIndex === 0;
+                  {chapter.exercises.map((exercise: any, index: number) => {
+                    const isFirst = index === 0;
                     return (
                       <View
-                        key={ex.id}
+                        key={exercise.id}
                         style={[
                           styles.exerciseRow,
                           isFirst && styles.highlightedExercise,
@@ -136,22 +148,21 @@ export default function StudentDetailScreen() {
                             isFirst && styles.highlightedExerciseText,
                           ]}
                         >
-                          {ex.title}
+                          {exercise.title}
                         </Text>
-
 
                         {isFirst && (
                           <View style={styles.detailsRow}>
                             <Text style={styles.detailsText}>
-                              Time taken: {ex.timeTaken || 'N/A'}
+                              Time taken: {exercise.timeTaken || 'N/A'}
                             </Text>
                             <Text style={styles.detailsText}>
-                              Hints used: {ex.hintsUsed}
+                              Hints used: {exercise.hintsUsed || 'N/A'}
                             </Text>
                             <View style={styles.attemptsContainer}>
                               <Text style={styles.detailsText}>Attempts: </Text>
-                              {ex.attempts.length > 0 ? (
-                                ex.attempts.map((attempt, i) => (
+                              {exercise.attempts && exercise.attempts.length > 0 ? (
+                                exercise.attempts.map((attempt: boolean, i: number) => (
                                   <Text
                                     key={i}
                                     style={[
@@ -169,13 +180,12 @@ export default function StudentDetailScreen() {
                           </View>
                         )}
 
-
                         {!isFirst && (
                           <View style={styles.nonFirstDetails}>
                             <Text style={styles.hintText}>
-                              {ex.attempts.length > 0
-                                ? `Attempts: ${ex.attempts
-                                    .map((a) => (a ? '✓' : '✕'))
+                              {exercise.attempts && exercise.attempts.length > 0
+                                ? `Attempts: ${exercise.attempts
+                                    .map((a: boolean) => (a ? '✓' : '✕'))
                                     .join(', ')}`
                                 : 'No attempts yet'}
                             </Text>
@@ -187,20 +197,61 @@ export default function StudentDetailScreen() {
                 </View>
               )}
             </View>
-          );
-        })}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </View>
     </BackgroundWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginLeft: 20,
+  },
+  tabButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  tabText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  activeTab: {
+    color: '#000',
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
+  },
+  scrollContent: {
     padding: 25,
     paddingBottom: 60,
   },
-
-
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#555',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    padding: 20,
+  },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -228,8 +279,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-
-
   chapterContainer: {
     marginBottom: 16,
     borderRadius: 12,
@@ -258,8 +307,6 @@ const styles = StyleSheet.create({
     height: 40,
     resizeMode: 'contain',
   },
-
-
   exercisesContainer: {
     marginTop: 6,
   },
@@ -270,7 +317,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   highlightedExercise: {
-    backgroundColor: '#E9FBD5', 
+    backgroundColor: '#E9FBD5',
   },
   exerciseTitle: {
     fontWeight: 'bold',
@@ -298,7 +345,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 4,
   },
-
   nonFirstDetails: {
     marginTop: 2,
   },
