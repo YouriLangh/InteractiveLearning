@@ -26,19 +26,12 @@
     "plugins": [
       "expo-router",
       [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera.",
-          "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
-        }
-      ],
-      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#C0E8E0"
+          "backgroundColor": "#F59428"
         }
       ],
       "expo-font",
@@ -48,7 +41,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://192.168.1.2:5000/api"
+      "apiUrl": "http://192.168.129.9:5000/api"
     }
   }
 }
