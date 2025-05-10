@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import SnapshotViewer from "@/hooks/useAutoCapture";
 import {
   StyleSheet,
   Text,
@@ -53,8 +52,6 @@ export default function StudentLearnScreen() {
   const [detectedDots, setDetectedDots] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const expectedAnswer = parseInt(answer as string, 10);
-
-  const [snapshotVersion, setSnapshotVersion] = useState(0);
 
   const triggerShake = () => {
     Animated.sequence([
@@ -146,9 +143,6 @@ export default function StudentLearnScreen() {
         const filename = `snapshot-${Date.now()}.jpg`;
         const path = `${RNFS.DocumentDirectoryPath}/snapshot-latest.jpg`;
         await RNFS.writeFile(path, base64, "base64");
-        setSnapshotVersion(Date.now()); // triggers re-render in SnapshotViewer
-
-        console.log(`Saved snapshot to: ${path}`);
 
         // Send to backend
         const response = await axios.post(BACKEND_URL, {
@@ -270,12 +264,15 @@ export default function StudentLearnScreen() {
                 resizeMode="contain"
               />
               <Text style={styles.wrongText}>
-                {detectedDots === 0 
+                {detectedDots === 0
                   ? "No blocks detected. Please try again."
                   : detectedDots < expectedAnswer
-                  ? `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Add ${expectedAnswer - detectedDots} more!`
-                  : `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Remove ${detectedDots - expectedAnswer}!`
-                }
+                  ? `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Add ${
+                      expectedAnswer - detectedDots
+                    } more!`
+                  : `We see ${detectedDots} blocks, but you need ${expectedAnswer}. Remove ${
+                      detectedDots - expectedAnswer
+                    }!`}
               </Text>
             </View>
           )}
@@ -398,7 +395,6 @@ export default function StudentLearnScreen() {
           </Modal>
         )}
       </View>
-      <SnapshotViewer version={snapshotVersion} />
     </BackgroundWrapper>
   );
 }
