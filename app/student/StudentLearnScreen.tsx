@@ -155,9 +155,8 @@ export default function StudentLearnScreen() {
         const response = await axios.post(BACKEND_URL, {
           image: base64,
           fileType: "image/jpeg",
-          answer: answer,
+          answer: expectedAnswer,
         });
-
         setisLoading(false);
         setIsFrozen(true); // freeze the camera
         setDetectedDots(response.data.darkSpotCount);
