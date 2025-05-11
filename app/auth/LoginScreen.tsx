@@ -76,7 +76,7 @@ export default function LoginScreen() {
 
       // Ensure we have a valid response with user data
       if (!response || !response.user || !response.user.role) {
-        throw new Error('Invalid user data received');
+        throw new Error("Invalid user data received");
       }
 
       const userRole = response.user.role.toUpperCase();
@@ -85,7 +85,7 @@ export default function LoginScreen() {
       } else if (userRole === "STUDENT") {
         router.replace("/student/StudentExerciseList");
       } else {
-        throw new Error('Invalid user role');
+        throw new Error("Invalid user role");
       }
     } catch (error: any) {
       console.error("Login failed:", error);
@@ -96,7 +96,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <BackgroundWrapper nav={false}>
+    <BackgroundWrapper nav={false} role={uiRole as "STUDENT" | "TEACHER"}>
       <ReturnButton />
       <View style={[newStyles.container]}>
         <View style={newStyles.rowContainer}>

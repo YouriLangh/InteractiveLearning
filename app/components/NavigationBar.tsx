@@ -15,8 +15,11 @@ const { width } = Dimensions.get("window");
 
 const mascotSize = width < 400 ? 32 : width < 600 ? 40 : 55;
 const iconSize = width < 400 ? 24 : 32;
+type Props = {
+  role: "STUDENT" | "TEACHER";
+};
 
-export default function NavigationBar() {
+export default function NavigationBar({ role }: Props) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -71,7 +74,7 @@ export default function NavigationBar() {
 
         {/* Right Section */}
         <View style={styles.rightSection}>
-          {user && (
+          {user && role === "STUDENT" ? (
             <TouchableOpacity
               style={styles.avatarButton}
               onPress={() => setShowDropdown(!showDropdown)}
@@ -80,6 +83,13 @@ export default function NavigationBar() {
                 source={require("@/assets/images/avatar.png")}
                 style={{ width: 48, height: 48 }}
               />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.logOutContainer}
+              onPress={handleLogout}
+            >
+              <Text style={styles.logOutText}>Log out</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -133,7 +143,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   rightSection: {
-    width: iconSize,
+    position: "absolute",
+    right: 20,
+    // width: iconSize,
     alignItems: "flex-end",
   },
   homeButton: {
@@ -141,6 +153,17 @@ const styles = StyleSheet.create({
   },
   avatarButton: {
     zIndex: 10,
+  },
+  logOutText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  logOutContainer: {
+    backgroundColor: "rgba(87, 87, 87, 0.57)",
+    padding: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
   },
   avatar: {
     borderRadius: 20,

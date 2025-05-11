@@ -191,7 +191,7 @@ export default function StudentLearnScreen() {
   }, [isSolving, showPreview, attemptMade, isFrozen]);
 
   return (
-    <BackgroundWrapper nav={true}>
+    <BackgroundWrapper nav={true} role={"STUDENT"}>
       <View style={{ flex: 1, alignItems: "center", paddingTop: 30 }}>
         <Text
           style={{

@@ -37,9 +37,8 @@ export default function ProfileScreen() {
   }, []);
 
   return (
-    <BackgroundWrapper nav={true}>
+    <BackgroundWrapper nav={true} role={"TEACHER"}>
       <ScrollView contentContainerStyle={styles.container}>
-        <ReturnButton />
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => router.push("/teacher/ProfileScreen")}

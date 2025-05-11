@@ -36,7 +36,9 @@ export default function StudentExerciseList() {
   const [chaptersData, setChaptersData] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
+  const [expandedChapters, setExpandedChapters] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
 
   useEffect(() => {
@@ -45,15 +47,20 @@ export default function StudentExerciseList() {
         setLoading(true);
         const response = await api.get("/chapters");
         setChaptersData(response.data);
-        const expandedInitialState = response.data.reduce((acc: any, chapter: Chapter) => {
-          acc[chapter.id] = true;
-          return acc;
-        }, {});
+        const expandedInitialState = response.data.reduce(
+          (acc: any, chapter: Chapter) => {
+            acc[chapter.id] = true;
+            return acc;
+          },
+          {}
+        );
         setExpandedChapters(expandedInitialState);
 
         // Fetch student progress using the current user's ID
         if (user?.id) {
-          const progressResponse = await api.get(`/progress/${user.id}/success-rate`);
+          const progressResponse = await api.get(
+            `/progress/${user.id}/success-rate`
+          );
           setProgressPercentage(progressResponse.data.successRate || 0);
         }
       } catch (err) {
@@ -81,7 +88,7 @@ export default function StudentExerciseList() {
 
   if (loading) {
     return (
-      <BackgroundWrapper nav={true}>
+      <BackgroundWrapper nav={true} role={"STUDENT"}>
         <View style={styles.centered}>
           <Text>Loading...</Text>
         </View>
@@ -91,7 +98,7 @@ export default function StudentExerciseList() {
 
   if (error) {
     return (
-      <BackgroundWrapper nav={true}>
+      <BackgroundWrapper nav={true} role={"STUDENT"}>
         <View style={styles.centered}>
           <Text style={{ color: "red" }}>{error}</Text>
         </View>
@@ -100,7 +107,7 @@ export default function StudentExerciseList() {
   }
 
   return (
-    <BackgroundWrapper nav={true}>
+    <BackgroundWrapper nav={true} role={"STUDENT"}>
       <View
         style={[
           styles.contentWrapper,
@@ -206,7 +213,7 @@ export default function StudentExerciseList() {
                             >
                               Exercise {index + 1}: {exercise.title}
                             </Text>
-                            <View
+                            {/* <View
                               key={"Stars" + exercise.id}
                               style={styles.starsWrapper}
                             >
@@ -223,7 +230,7 @@ export default function StudentExerciseList() {
                                   />
                                 )
                               )}
-                            </View>
+                            </View> */}
                           </TouchableOpacity>
                         );
                       })}

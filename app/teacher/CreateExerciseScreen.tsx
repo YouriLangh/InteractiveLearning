@@ -19,8 +19,7 @@ export default function CreateExerciseScreen() {
 
   const chapterIdStr = Array.isArray(chapterId) ? chapterId[0] : chapterId;
   const exerciseIdStr = Array.isArray(exerciseId) ? exerciseId[0] : exerciseId;
-  const isViewMode = mode === 'view';
-
+  const isViewMode = mode === "view";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [stars, setStars] = useState("0");
@@ -103,12 +102,16 @@ export default function CreateExerciseScreen() {
   };
 
   return (
-    <BackgroundWrapper nav={true}>
+    <BackgroundWrapper nav={true} role={"TEACHER"}>
       <ScrollView contentContainerStyle={styles.container}>
         <ReturnButton />
         <View style={styles.formBox}>
           <Text style={styles.header}>
-            {isViewMode ? "View Exercise" : exerciseIdStr ? "Edit Exercise" : "Create Exercise"}
+            {isViewMode
+              ? "View Exercise"
+              : exerciseIdStr
+              ? "Edit Exercise"
+              : "Create Exercise"}
           </Text>
 
           <View style={styles.formGroup}>
@@ -134,7 +137,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
-          <View style={styles.formGroup}>
+          {/* <View style={styles.formGroup}>
             <Text style={styles.label}>Stars (0-5):</Text>
             <TextInput
               placeholder="Enter stars"
@@ -144,7 +147,7 @@ export default function CreateExerciseScreen() {
               keyboardType="number-pad"
               editable={!isViewMode}
             />
-          </View>
+          </View> */}
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Visible To:</Text>
@@ -158,12 +161,12 @@ export default function CreateExerciseScreen() {
                     [
                       {
                         text: "All Users",
-                        onPress: () => setVisibleTo("ALL")
+                        onPress: () => setVisibleTo("ALL"),
                       },
                       {
                         text: "Teachers Only",
-                        onPress: () => setVisibleTo("TEACHERS_ONLY")
-                      }
+                        onPress: () => setVisibleTo("TEACHERS_ONLY"),
+                      },
                     ]
                   );
                 }}
@@ -220,7 +223,11 @@ export default function CreateExerciseScreen() {
                 disabled={loading}
               >
                 <Text style={styles.buttonText}>
-                  {loading ? "Saving..." : exerciseIdStr ? "Save Changes" : "Create Exercise"}
+                  {loading
+                    ? "Saving..."
+                    : exerciseIdStr
+                    ? "Save Changes"
+                    : "Create Exercise"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -235,17 +242,17 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 40,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   formBox: {
-    width: '100%',
+    width: "100%",
     maxWidth: 500,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 30,
-    alignSelf: 'center',
-    shadowColor: '#000',
+    alignSelf: "center",
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
@@ -253,18 +260,18 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   formGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 6,
   },
   input: {
@@ -272,43 +279,43 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 12,
-    color: '#333',
+    color: "#333",
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: "#DDD",
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 30,
   },
   saveButton: {
-    backgroundColor: '#FF8B45',
+    backgroundColor: "#FF8B45",
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   selectContainer: {
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: "#DDD",
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   selectButton: {
     paddingHorizontal: 10,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   selectButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
 });

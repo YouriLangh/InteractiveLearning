@@ -4,10 +4,11 @@ import NavigationBar from "./NavigationBar";
 
 type Props = {
   nav: boolean;
+  role: "STUDENT" | "TEACHER";
   children: React.ReactNode;
 };
 
-export default function BackgroundWrapper({ nav, children }: Props) {
+export default function BackgroundWrapper({ nav, role, children }: Props) {
   return (
     <View style={styles.container}>
       {/* Bottom right */}
@@ -28,7 +29,7 @@ export default function BackgroundWrapper({ nav, children }: Props) {
         style={[styles.cube, styles.cubeLeft]}
       />
 
-      {nav && <NavigationBar />}
+      {nav && <NavigationBar role={role} />}
       {children}
     </View>
   );
