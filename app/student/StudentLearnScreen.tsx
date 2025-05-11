@@ -12,12 +12,10 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 import Sound from "react-native-sound";
-import RNFS from "react-native-fs";
 import axios from "axios";
 import { useRouter } from "expo-router";
-
+import LoadingIndicator from "../components/ui/LoadingIndicator";
 import HapticFeedback from "react-native-haptic-feedback";
-import LottieView from "lottie-react-native";
 import { useLocalSearchParams } from "expo-router";
 import BackgroundWrapper from "../components/BackgroundWrapper";
 Sound.setCategory("Playback");
@@ -28,6 +26,9 @@ export default function StudentLearnScreen() {
   const { chapterId, exerciseNr, id, title, stars, answer } =
     useLocalSearchParams();
   const router = useRouter();
+  const CAMERA_SERVER_URL = "http://192.168.129.2:8080"; // IP Webcam server URL
+  const SNAPSHOT_URL = CAMERA_SERVER_URL + "/photo.jpg"; // IP Webcam snapshot endpoint
+  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve";
 
   const [isSolving, setIsSolving] = useState(false);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -40,6 +41,32 @@ export default function StudentLearnScreen() {
   const [detectedDots, setDetectedDots] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const expectedAnswer = parseInt(answer as string, 10);
+  const [isCameraAvailable, setIsCameraAvailable] = useState<boolean | null>(
+    null
+  );
+  async function checkCameraAvailable(camera_server_url: string) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+
+    try {
+      const res = await fetch(
+        `${camera_server_url}/photo.jpg?cacheBust=${Date.now()}`,
+        {
+          method: "HEAD",
+          signal: controller.signal,
+        }
+      );
+      setIsCameraAvailable(res.ok);
+    } catch (err) {
+      console.warn("Camera server not reachable:", err);
+      setIsCameraAvailable(false);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  useEffect(() => {
+    checkCameraAvailable(CAMERA_SERVER_URL);
+  }, []);
 
   const triggerShake = () => {
     Animated.sequence([
@@ -103,13 +130,10 @@ export default function StudentLearnScreen() {
       }
     );
   };
-  const CAMERA_SERVER_URL = "http://192.168.129.2:8080";
-  const SNAPSHOT_URL = CAMERA_SERVER_URL + "/photo.jpg"; // IP Webcam snapshot endpoint
-  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve";
+
   useEffect(() => {
-    console.log("Are we in solving mode? ", isSolving);
     if (!isSolving || showPreview || attemptMade || isFrozen) return;
-    const interval = setInterval(async () => {
+    const processFrame = async () => {
       try {
         const res = await fetch(`${SNAPSHOT_URL}?cacheBust=${Date.now()}`);
         const blob = await res.blob();
@@ -134,7 +158,6 @@ export default function StudentLearnScreen() {
           answer: answer,
         });
 
-        console.log("Image sent to backend");
         setisLoading(false);
         setIsFrozen(true); // freeze the camera
         setDetectedDots(response.data.darkSpotCount);
@@ -163,9 +186,8 @@ export default function StudentLearnScreen() {
       } catch (err) {
         console.error("Frame capture or upload failed:", err);
       }
-    }, 5000);
-
-    return () => clearInterval(interval);
+    };
+    processFrame();
   }, [isSolving, showPreview, attemptMade, isFrozen]);
 
   return (
@@ -203,11 +225,46 @@ export default function StudentLearnScreen() {
           ]}
         >
           {!isFrozen ? (
-            <WebView
-              source={{ uri: CAMERA_SERVER_URL + "/video" }}
-              style={{ flex: 1 }}
-              javaScriptEnabled
-            />
+            isCameraAvailable ? (
+              <WebView
+                source={{ uri: CAMERA_SERVER_URL + "/video" }}
+                style={{ flex: 1 }}
+                javaScriptEnabled
+              />
+            ) : (
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: "black" }]}
+              >
+                <LoadingIndicator text={"Looking for stream..."} />
+                <TouchableOpacity
+                  onPress={() => checkCameraAvailable(CAMERA_SERVER_URL)}
+                  style={{
+                    position: "absolute",
+                    bottom: 20,
+                    // left: "40%",
+                    zIndex: 30,
+                    backgroundColor: "rgb(54, 152, 197)",
+                    paddingVertical: 10,
+                    paddingHorizontal: 25,
+                    borderRadius: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    alignSelf: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 24,
+                      fontFamily: "Poppins-Regular",
+                      color: "white",
+                      textAlign: "center",
+                    }}
+                  >
+                    Refresh
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
           ) : (
             <View
               style={{
@@ -216,9 +273,7 @@ export default function StudentLearnScreen() {
                 justifyContent: "center",
                 alignItems: "center",
               }}
-            >
-              <Text style={{ color: "white", fontSize: 20 }}>Paused</Text>
-            </View>
+            ></View>
           )}
 
           {imageBase64 && showPreview && (
@@ -235,7 +290,6 @@ export default function StudentLearnScreen() {
               <Image
                 source={{ uri: `data:image/png;base64,${imageBase64}` }}
                 style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
-                resizeMode="contain"
               />
               <Text style={styles.wrongText}>
                 {detectedDots === 0
@@ -251,82 +305,57 @@ export default function StudentLearnScreen() {
             </View>
           )}
           {/* Loading Indicator */}
-          {isLoading && (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: "rgba(29, 29, 29, 0.75)",
-                  zIndex: 30,
-                  alignItems: "center",
-                  justifyContent: "center",
-                },
-              ]}
-            >
-              <View style={styles.loadingOverlay}>
-                <LottieView
-                  style={{ width: 100, height: 150 }}
-                  source={require("@/assets/animations/Loading_Animation.json")} // Use your animation file path here
-                  autoPlay
-                  loop
+          {isLoading && <LoadingIndicator text={"Loading..."} />}
+
+          {/* Solve/ Try again Buttons */}
+          {isCameraAvailable && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.captureButton,
+                  {
+                    backgroundColor: attemptMade
+                      ? "rgb(233, 99, 99)"
+                      : "#99D881",
+                  },
+                ]}
+                onPress={() => {
+                  if (attemptMade && showPreview && !isLoading) {
+                    // Reset the camera and preview state for a new attempt
+                    setShowPreview(false);
+                    setIsFrozen(false);
+                    setAttemptMade(false); // Reset attempt
+                    setIsSolving(false);
+                  } else {
+                    // Proceed with the first attempt
+                    setIsSolving(!isSolving);
+                  }
+                }}
+              >
+                <Image
+                  style={{
+                    width: attemptMade ? 24 : 32,
+                    height: attemptMade ? 24 : 32,
+                    marginHorizontal: 24,
+                  }}
+                  source={
+                    attemptMade
+                      ? require("@/assets/images/close.png")
+                      : require("@/assets/images/check.png")
+                  }
                 />
                 <Text
                   style={{
-                    fontSize: 28,
-                    color: "rgb(255, 255, 255)",
-                    fontFamily: "Poppins-Medium",
-                    textAlign: "center",
-                    marginTop: -5,
-                    marginLeft: 20,
+                    color: "white",
+                    fontSize: 24,
+                    fontFamily: "Poppins-Regular",
                   }}
                 >
-                  Loading...
+                  {attemptMade ? "Try Again" : "Try it!"}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
           )}
-          <TouchableOpacity
-            style={[
-              styles.captureButton,
-              {
-                backgroundColor: attemptMade ? "rgb(233, 99, 99)" : "#99D881",
-              },
-            ]}
-            onPress={() => {
-              if (attemptMade && showPreview && !isLoading) {
-                // Reset the camera and preview state for a new attempt
-                setShowPreview(false);
-                setIsFrozen(false);
-                setAttemptMade(false); // Reset attempt
-                setIsSolving(false);
-              } else {
-                // Proceed with the first attempt
-                setIsSolving(!isSolving);
-              }
-            }}
-          >
-            <Image
-              style={{
-                width: attemptMade ? 24 : 32,
-                height: attemptMade ? 24 : 32,
-                marginHorizontal: 24,
-              }}
-              source={
-                attemptMade
-                  ? require("@/assets/images/close.png")
-                  : require("@/assets/images/check.png")
-              }
-            />
-            <Text
-              style={{
-                color: "white",
-                fontSize: 24,
-                fontFamily: "Poppins-Regular",
-              }}
-            >
-              {attemptMade ? "Try Again" : "Solve automatically!"}
-            </Text>
-          </TouchableOpacity>
         </Animated.View>
 
         {showSolveDialogue && (
@@ -384,15 +413,20 @@ const styles = StyleSheet.create({
     color: "rgba(186, 4, 4, 100)",
     fontSize: 24,
   },
-  captureButton: {
+  buttonContainer: {
     position: "absolute",
     bottom: 20,
-    left: "25%",
-    opacity: 0.7,
-
-    paddingRight: 40,
+    width: "100%",
+    zIndex: 20,
     height: 70,
-    zIndex: 100,
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  captureButton: {
+    opacity: 0.7,
+    paddingRight: 40,
+    height: "100%",
+    zIndex: 20,
     borderRadius: 10,
     display: "flex",
     flexDirection: "row",
