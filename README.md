@@ -53,7 +53,7 @@ Normally the app should open automatically on your connected device after the ap
 
 2. **Configure the following settings** in the app:
 
-   - **Video resolution:** `960x720`
+   - **Video resolution:** `960x720` or `720x720`. Any resolution is fine, lower helps with latency.
    - **Photo resolution:** `1440x1440`  
      _(This ensures consistent computer vision performance, even when the phone is rotated.)_
 
