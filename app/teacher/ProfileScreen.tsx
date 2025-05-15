@@ -60,6 +60,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.actionRow}>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push("/teacher/AddStudentScreen")}
+          >
+            <Text style={styles.addButtonText}>+ Add Student</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
           <View style={styles.centered}>
             <Text style={styles.loadingText}>Loading students...</Text>
@@ -120,9 +129,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#000",
   },
-
+  actionRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginVertical: 10,
+    paddingHorizontal: 16,
+  },
   addButton: {
-    backgroundColor: "#A4C8F0",
+    backgroundColor: "#85E585",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,

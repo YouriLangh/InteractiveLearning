@@ -25,7 +25,6 @@ export default function SignupScreen() {
   const { signup } = useAuth();
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [role, setRole] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,9 +39,9 @@ export default function SignupScreen() {
     }
 
     try {
-      await signup({ name, code, role });
-      alert('Account created successfully! Please login.');
-      router.replace('/auth/LoginScreen');
+      await signup({ name, code, role: 'TEACHER' });
+      alert('Teacher account created successfully! Please login.');
+      router.replace('/auth/LoginScreen?role=teacher');
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
@@ -51,7 +50,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <BackgroundWrapper nav={false}>
+    <BackgroundWrapper nav={false} role="TEACHER">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -63,7 +62,7 @@ export default function SignupScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <ReturnButton />
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.title}>Create Teacher Account</Text>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -84,32 +83,16 @@ export default function SignupScreen() {
                 onChangeText={setCode}
               />
 
-              <View style={styles.roleContainer}>
-                <TouchableOpacity
-                  style={[styles.roleButton, role === 'STUDENT' && styles.selectedRole]}
-                  onPress={() => setRole('STUDENT')}
-                >
-                  <Text style={styles.roleText}>Student</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.roleButton, role === 'TEACHER' && styles.selectedRole]}
-                  onPress={() => setRole('TEACHER')}
-                >
-                  <Text style={styles.roleText}>Teacher</Text>
-                </TouchableOpacity>
-              </View>
-
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleSignup}
               >
-                <Text style={styles.buttonText}>Create Account</Text>
+                <Text style={styles.buttonText}>Create Teacher Account</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.loginLink}
-                onPress={() => router.push('/auth/LoginScreen')}
+                onPress={() => router.push('/auth/LoginScreen?role=teacher')}
               >
                 <Text style={styles.loginText}>
                   Already have an account? <Text style={styles.loginLinkText}>Login</Text>
@@ -176,30 +159,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: width < 400 ? 8 : 10,
-    marginVertical: height < 400 ? 8 : 10,
-  },
-  roleButton: {
-    flex: 1,
-    padding: height < 400 ? 10 : 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#F9A83610',
-    borderWidth: 1,
-    borderColor: '#F9A83630',
-    minHeight: 40,
-  },
-  selectedRole: {
-    backgroundColor: '#F9A83620',
-    borderColor: '#F9A836',
-  },
-  roleText: {
-    color: '#F9A836',
-    fontWeight: '500',
     fontSize: isSmallScreen ? scaleFactor * 14 : scaleFactor * 16,
   },
   errorText: {
