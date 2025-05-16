@@ -70,6 +70,7 @@ export const getStudentProgress = async (req: Request, res: Response) => {
 export const getStudentFullProgress = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
+    console.log('Fetching progress for student:', studentId);
 
     if (!studentId || isNaN(parseInt(studentId))) {
       return res.status(400).json({ message: 'Invalid student ID' });
@@ -105,22 +106,40 @@ export const getStudentFullProgress = async (req: Request, res: Response) => {
       }
     });
 
+    console.log('Found chapters:', chapters.length);
+
     const formattedChapters = chapters.map((chapter) => ({
       id: chapter.id,
       title: chapter.title,
-      exercises: chapter.exercises.map((exercise) => ({
-        id: exercise.id,
-        title: exercise.title,
-        timeTaken: "N/A",
-        hintsUsed: exercise.attempts.reduce((sum, attempt) => sum + (attempt.hintUsedCount || 0), 0),
-        attempts: exercise.attempts.map((attempt) => attempt.status === "PASSED")
-      }))
+      exercises: chapter.exercises.map((exercise) => {
+        const hintsUsed = exercise.attempts.reduce((sum, attempt) => sum + (attempt.hintUsedCount || 0), 0);
+        const attempts = exercise.attempts.map((attempt) => attempt.status === "PASSED");
+        const timeTaken = exercise.attempts.length > 0 
+          ? parseInt(exercise.attempts[exercise.attempts.length - 1].timeTaken || '0', 10)
+          : 0;
+        const totalTimeSpent = exercise.attempts.reduce((sum, attempt) => 
+          sum + parseInt(attempt.timeTaken || '0', 10), 0
+        );
+        
+        console.log(`Exercise ${exercise.id} - Hints: ${hintsUsed}, Attempts: ${attempts.length}, Time: ${timeTaken}, Total Time: ${totalTimeSpent}`);
+        return {
+          id: exercise.id,
+          title: exercise.title,
+          hintsUsed,
+          attempts,
+          timeTaken,
+          totalTimeSpent
+        };
+      })
     }));
 
-    res.status(200).json({
+    const response = {
       studentId: parseInt(studentId),
       chapters: formattedChapters
-    });
+    };
+
+    console.log('Sending response:', JSON.stringify(response, null, 2));
+    res.status(200).json(response);
 
   } catch (error) {
     console.error('Error fetching student full progress:', error);

@@ -19,6 +19,7 @@ interface Exercise {
   title: string;
   stars: number;
   answer: number;
+  attempts?: boolean[];
 }
 
 interface Chapter {
@@ -41,13 +42,53 @@ export default function StudentExerciseList() {
   }>({});
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
 
+  // Calculate progress bar height based on screen height
+  const progressBarHeight = height * 0.6; // 60% of screen height
+  const mascotSize = 50; // mascot width/height
+
   useEffect(() => {
     const fetchChapters = async () => {
       try {
         setLoading(true);
         const response = await api.get("/chapters");
-        setChaptersData(response.data);
-        const expandedInitialState = response.data.reduce(
+        // Sort chapters by ID
+        const chapters = response.data.sort((a: Chapter, b: Chapter) => a.id - b.id);
+
+        // Fetch student progress with attempts
+        if (user?.id) {
+          const progressResponse = await api.get(`/progress/${user.id}`);
+          const progressData = progressResponse.data;
+          console.log('Progress data:', progressData);
+
+          // Map attempts to exercises
+          const chaptersWithAttempts = chapters.map((chapter: Chapter) => ({
+            ...chapter,
+            exercises: chapter.exercises.map((exercise: Exercise) => {
+              const chapterProgress = progressData.chapters.find((c: any) => c.id === chapter.id);
+              const exerciseProgress = chapterProgress?.exercises.find((e: any) => e.id === exercise.id);
+              return {
+                ...exercise,
+                attempts: exerciseProgress?.attempts || []
+              };
+            })
+          }));
+
+          setChaptersData(chaptersWithAttempts);
+          
+          // Calculate total exercises and solved exercises
+          const totalExercises = chapters.reduce((sum: number, chapter: Chapter) => sum + chapter.exercises.length, 0);
+          const solvedExercises = chaptersWithAttempts.reduce((sum: number, chapter: Chapter) => 
+            sum + chapter.exercises.filter((ex: Exercise) => ex.attempts?.some((attempt: boolean) => attempt)).length, 0
+          );
+          
+          const successRate = totalExercises > 0 ? (solvedExercises / totalExercises) * 100 : 0;
+          console.log('Total exercises:', totalExercises, 'Solved:', solvedExercises, 'Success rate:', successRate);
+          setProgressPercentage(successRate);
+        } else {
+          setChaptersData(chapters);
+        }
+
+        const expandedInitialState = chapters.reduce(
           (acc: any, chapter: Chapter) => {
             acc[chapter.id] = true;
             return acc;
@@ -55,14 +96,6 @@ export default function StudentExerciseList() {
           {}
         );
         setExpandedChapters(expandedInitialState);
-
-        // Fetch student progress using the current user's ID
-        if (user?.id) {
-          const progressResponse = await api.get(
-            `/progress/${user.id}/success-rate`
-          );
-          setProgressPercentage(progressResponse.data.successRate || 0);
-        }
       } catch (err) {
         console.error(err);
         setError("Failed to load exercises.");
@@ -75,7 +108,8 @@ export default function StudentExerciseList() {
   }, [user?.id]);
 
   // Calculate mascot position and orange line height based on progress
-  const mascotPosition = progressPercentage;
+  const mascotPosition = Math.max(0, (progressBarHeight * progressPercentage / 100) - (mascotSize / 2));
+  console.log('Progress:', progressPercentage, 'Mascot position:', mascotPosition);
   const orangeLineHeight = progressPercentage;
   const greyLineHeight = 100 - progressPercentage;
 
@@ -84,6 +118,11 @@ export default function StudentExerciseList() {
       ...prev,
       [chapterId]: !prev[chapterId],
     }));
+  };
+
+  const getExerciseBackgroundColor = (attempts?: boolean[]) => {
+    if (!attempts || attempts.length === 0) return '#FFFFFF';
+    return attempts.some(attempt => attempt) ? '#e6ffe6' : '#FFFFFF';
   };
 
   if (loading) {
@@ -114,7 +153,7 @@ export default function StudentExerciseList() {
           isLandscape ? styles.landscape : styles.portrait,
         ]}
       >
-        <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBarContainer, { height: progressBarHeight }]}>
           {/* Orange bar till mascot */}
           <View
             style={[
@@ -130,7 +169,7 @@ export default function StudentExerciseList() {
           {/* Mascot */}
           <Image
             source={require("@/assets/images/mascott.png")}
-            style={[styles.mascot, { top: `${mascotPosition}%` }]}
+            style={[styles.mascot, { top: mascotPosition }]}
           />
           {/* Grey bar from mascot till end */}
           <View
@@ -183,12 +222,14 @@ export default function StudentExerciseList() {
                     <View style={styles.exercisesContainer}>
                       {chapter.exercises.map((exercise, index) => {
                         const isFirstExercise = index === 0 && chapter.id === 1;
+                        const isSolved = exercise.attempts?.some(attempt => attempt);
                         return (
                           <TouchableOpacity
                             key={exercise.id}
                             style={[
                               styles.exerciseRow,
                               isFirstExercise && styles.highlightedExercise,
+                              { backgroundColor: getExerciseBackgroundColor(exercise.attempts) }
                             ]}
                             onPress={() => {
                               router.push({
@@ -204,33 +245,19 @@ export default function StudentExerciseList() {
                               });
                             }}
                           >
-                            <Text
-                              style={[
-                                styles.exerciseText,
-                                isFirstExercise &&
-                                  styles.highlightedExerciseText,
-                              ]}
-                            >
-                              Exercise {index + 1}: {exercise.title}
-                            </Text>
-                            {/* <View
-                              key={"Stars" + exercise.id}
-                              style={styles.starsWrapper}
-                            >
-                              {Array.from({ length: exercise.stars }).map(
-                                (_, i) => (
-                                  <Image
-                                    key={`star-${exercise.id}-${i}`}
-                                    source={
-                                      isFirstExercise
-                                        ? require("@/assets/images/Star.png")
-                                        : require("@/assets/images/GrayStar.png")
-                                    }
-                                    style={styles.star}
-                                  />
-                                )
+                            <View style={styles.exerciseContent}>
+                              <Text
+                                style={[
+                                  styles.exerciseText,
+                                  isFirstExercise && styles.highlightedExerciseText,
+                                ]}
+                              >
+                                Exercise {index + 1}: {exercise.title}
+                              </Text>
+                              {isSolved && (
+                                <Text style={styles.solvedText}>Solved</Text>
                               )}
-                            </View> */}
+                            </View>
                           </TouchableOpacity>
                         );
                       })}
@@ -266,7 +293,6 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     alignItems: "center",
     position: "relative",
-    height: "150%",
   },
   arrowIcon: {
     width: 42,
@@ -281,7 +307,6 @@ const styles = StyleSheet.create({
   },
   mascot: {
     position: "absolute",
-    top: "18%",
     zIndex: 1,
     width: 50,
     height: 50,
@@ -361,5 +386,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  exerciseContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  solvedText: {
+    color: '#2E7D32',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
   },
 });

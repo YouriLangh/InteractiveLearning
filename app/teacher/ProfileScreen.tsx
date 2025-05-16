@@ -10,7 +10,6 @@ import {
   Image,
 } from "react-native";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
-import ReturnButton from "@/app/components/ui/ReturnButton";
 import api from "@/services/api";
 
 const { width } = Dimensions.get("window");
@@ -25,7 +24,36 @@ export default function ProfileScreen() {
     const fetchStudents = async () => {
       try {
         const response = await api.get("/users/students");
-        setStudents(response.data);
+        const studentsWithProgress = await Promise.all(
+          response.data.map(async (student: any) => {
+            try {
+              const progressResponse = await api.get(`/progress/${student.id}`);
+              const progress = progressResponse.data;
+              
+              // Calculate success rate
+              const totalExercises = progress.chapters.reduce((acc: number, chapter: any) => 
+                acc + (chapter.exercises?.length || 0), 0);
+              const solvedExercises = progress.chapters.reduce((acc: number, chapter: any) => 
+                acc + (chapter.exercises?.filter((ex: any) => ex.attempts?.some((a: boolean) => a))?.length || 0), 0);
+              const attemptedExercises = progress.chapters.reduce((acc: number, chapter: any) => 
+                acc + (chapter.exercises?.filter((ex: any) => ex.attempts?.length > 0)?.length || 0), 0);
+              const successRate = attemptedExercises > 0 ? 
+                Number(((solvedExercises / attemptedExercises) * 100).toFixed(1)) : 0;
+
+              return {
+                ...student,
+                successRate
+              };
+            } catch (err) {
+              console.error(`Failed to fetch progress for student ${student.id}`, err);
+              return {
+                ...student,
+                successRate: 0
+              };
+            }
+          })
+        );
+        setStudents(studentsWithProgress);
       } catch (err) {
         console.error("Failed to fetch students", err);
       } finally {
@@ -97,8 +125,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
                 <View style={styles.infoText}>
                   <Text style={styles.name}>{student.name}</Text>
-                  <Text style={styles.label}>Exercise</Text>
-                  <Text style={styles.label}>Success Rate</Text>
+                  <Text style={styles.label}>Success Rate: {student.successRate}%</Text>
                 </View>
               </TouchableOpacity>
             ))}

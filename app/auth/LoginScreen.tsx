@@ -160,6 +160,7 @@ export default function LoginScreen() {
                 placeholderTextColor="#ccc"
                 value={code}
                 onChangeText={setCode}
+                secureTextEntry={isTeacherUI}
               />
             </View>
             <TouchableOpacity

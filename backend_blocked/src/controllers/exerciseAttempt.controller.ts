@@ -11,6 +11,8 @@ interface CreateAttemptBody {
 interface SubmitAnswerBody {
   answer: string;
   isCorrect: boolean;
+  timeTaken: number;
+  isCleanup?: boolean;
 }
 
 export const createAttempt = async (req: Request<{}, {}, CreateAttemptBody>, res: Response) => {
@@ -147,14 +149,25 @@ export const getAttemptsByStudent = async (req: Request, res: Response) => {
 export const submitStudentAnswer = async (req: Request<{ id: string }, {}, SubmitAnswerBody>, res: Response) => {
   try {
     const { id } = req.params;
-    const { answer, isCorrect } = req.body;
+    const { answer, isCorrect, timeTaken, isCleanup } = req.body;
+
+    console.log(`[Time Tracking] Received attempt submission for ID: ${id}`);
+    console.log(`[Time Tracking] Time taken: ${timeTaken} seconds`);
+    if (isCleanup) {
+      console.log('[Time Tracking] This is a cleanup save (student left the exercise)');
+    }
 
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ message: 'Invalid attempt ID' });
     }
 
-    if (!answer) {
+    if (!answer && !isCleanup) {
       return res.status(400).json({ message: 'Answer is required' });
+    }
+
+    if (typeof timeTaken !== 'number' || timeTaken < 0) {
+      console.error(`[Time Tracking] Invalid time value received: ${timeTaken}`);
+      return res.status(400).json({ message: 'Invalid time taken value' });
     }
 
     // Verify attempt exists and belongs to the student
@@ -170,23 +183,30 @@ export const submitStudentAnswer = async (req: Request<{ id: string }, {}, Submi
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    console.log(`[Time Tracking] Updating attempt ${id} with time: ${timeTaken} seconds`);
     const attempt = await prisma.exerciseAttempt.update({
       where: { id: parseInt(id) },
       data: {
-        studentAnswer: answer,
-        status: isCorrect ? 'PASSED' : 'FAILED',
+        studentAnswer: answer || existingAttempt.studentAnswer, // Keep existing answer if cleanup
+        status: isCleanup ? existingAttempt.status : (isCorrect ? 'PASSED' : 'FAILED'),
         attemptsCount: {
-          increment: 1
-        }
+          increment: isCleanup ? 0 : 1 // Don't increment attempts on cleanup
+        },
+        timeTaken: timeTaken as any // Force type to match Prisma's expectations
       }
     });
 
-    // Update success rate after attempt
-    await updateSuccessRateAfterAttempt(req.user.id);
+    console.log(`[Time Tracking] Successfully saved time for attempt ${id}`);
+    console.log(`[Time Tracking] Final time saved to database: ${timeTaken} seconds`);
+
+    // Update success rate after attempt (only if not cleanup)
+    if (!isCleanup) {
+      await updateSuccessRateAfterAttempt(req.user.id);
+    }
 
     res.json(attempt);
   } catch (error) {
-    console.error('Error submitting answer:', error);
+    console.error('[Time Tracking] Error submitting answer:', error);
     res.status(500).json({ message: 'Error submitting answer' });
   }
 }; 
