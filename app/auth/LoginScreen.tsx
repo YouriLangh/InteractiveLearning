@@ -160,6 +160,7 @@ export default function LoginScreen() {
                 placeholderTextColor="#ccc"
                 value={code}
                 onChangeText={setCode}
+                secureTextEntry={isTeacherUI}
               />
             </View>
             <TouchableOpacity
@@ -174,6 +175,18 @@ export default function LoginScreen() {
             >
               <Text style={newStyles.goButtonText}>GO</Text>
             </TouchableOpacity>
+            
+            {isTeacherUI && (
+              <TouchableOpacity
+                onPress={() => router.push("/auth/SignupScreen")}
+                style={newStyles.signupLink}
+              >
+                <Text style={newStyles.signupText}>
+                  Don't have an account? Sign up as a Teacher
+                </Text>
+              </TouchableOpacity>
+            )}
+            
             <TouchableOpacity
               onPress={() =>
                 router.push(
@@ -297,8 +310,18 @@ const newStyles = StyleSheet.create({
     fontSize: 24,
     textAlign: "center",
   },
+  signupLink: {
+    marginTop: 15,
+  },
+  signupText: {
+    color: "#487D33",
+    textDecorationLine: "underline",
+    fontSize: 16,
+    textAlign: "center",
+    fontFamily: "Poppins-Regular",
+  },
   switchText: {
-    marginTop: 36,
+    marginTop: 15,
     color: "#8C8C8C",
     textDecorationLine: "underline",
     fontSize: 16,

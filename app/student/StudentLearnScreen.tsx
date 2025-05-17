@@ -18,6 +18,8 @@ import LoadingIndicator from "../components/ui/LoadingIndicator";
 import HapticFeedback from "react-native-haptic-feedback";
 import { useLocalSearchParams } from "expo-router";
 import BackgroundWrapper from "../components/BackgroundWrapper";
+import { getSecureValue } from "@/services/secureStorage";
+import Constants from "expo-constants";
 Sound.setCategory("Playback");
 
 const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
@@ -26,9 +28,11 @@ export default function StudentLearnScreen() {
   const { chapterId, exerciseNr, id, title, stars, answer } =
     useLocalSearchParams();
   const router = useRouter();
-  const CAMERA_SERVER_URL = "http://192.168.129.2:8080"; // IP Webcam server URL
+  const CAMERA_SERVER_URL = "http://192.168.1.2:56000"; // IP Webcam server URL
   const SNAPSHOT_URL = CAMERA_SERVER_URL + "/photo.jpg"; // IP Webcam snapshot endpoint
-  const BACKEND_URL = "http://192.168.129.9:5000/api/upload/solve";
+  
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl || "http://192.168.1.2:5000/api";
+  const BACKEND_URL = `${apiUrl}/upload/solve`;
 
   const [isSolving, setIsSolving] = useState(false);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -36,6 +40,11 @@ export default function StudentLearnScreen() {
   const [isLoading, setisLoading] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [attemptMade, setAttemptMade] = useState(false);
+  const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
+  const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const [detectedDots, setDetectedDots] = useState(0);
@@ -171,9 +180,7 @@ export default function StudentLearnScreen() {
             setTimeout(() => {
               setShowSolveDialogue(false);
               setIsFrozen(false);
-              router.push({
-                pathname: "/student/StudentExerciseList",
-              });
+              handleNavigation();
             }, 1500);
           } else {
             vibrateFeedback("wrong");
@@ -188,6 +195,139 @@ export default function StudentLearnScreen() {
     };
     processFrame();
   }, [isSolving, showPreview, attemptMade, isFrozen]);
+
+  // Create or get existing attempt when component loads
+  useEffect(() => {
+    const createAttempt = async () => {
+      try {
+        const exerciseIdStr = id as string;
+        if (!exerciseIdStr) {
+          console.error("No exercise ID provided");
+          return;
+        }
+
+        const token = await getSecureValue('authToken');
+        console.log(`[Time Tracking] Creating new attempt for exercise: ${exerciseIdStr}`);
+
+        const response = await axios.post(`${apiUrl}/attempts`, 
+          {
+            exerciseId: exerciseIdStr
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        setCurrentAttemptId(response.data.id);
+        const now = Date.now();
+        setStartTime(now);
+        console.log(`[Time Tracking] Started timer at: ${new Date(now).toISOString()}`);
+        console.log(`[Time Tracking] Attempt created with ID: ${response.data.id}`);
+      } catch (err) {
+        console.error("[Time Tracking] Failed to create attempt:", err);
+        if (axios.isAxiosError(err)) {
+          console.error("Error details:", {
+            status: err.response?.status,
+            data: err.response?.data,
+            url: err.config?.url
+          });
+        }
+      }
+    };
+
+    createAttempt();
+  }, [id]);
+
+  // Handle cleanup when component unmounts or student leaves
+  useEffect(() => {
+    return () => {
+      if (currentAttemptId && !isLeaving) {
+        console.log('[Time Tracking] Component unmounting - saving final time');
+        const finalTime = Math.floor((Date.now() - startTime) / 1000);
+        saveAttemptResult('', false, true); // true indicates it's a cleanup save
+      }
+    };
+  }, [currentAttemptId, startTime, isLeaving]);
+
+  // Function to save the attempt result
+  const saveAttemptResult = async (answer: string, isCorrect: boolean, isCleanup: boolean = false) => {
+    if (!currentAttemptId) {
+      console.error("No attempt ID found, cannot save result");
+      return;
+    }
+
+    try {
+      const token = await getSecureValue('authToken');
+      const endTime = Date.now();
+      const timeSpent = Math.floor((endTime - startTime) / 1000);
+      
+      if (isCleanup) {
+        console.log(`[Time Tracking] Saving time on exit: ${timeSpent} seconds`);
+      } else {
+        console.log(`[Time Tracking] Stopped timer at: ${new Date(endTime).toISOString()}`);
+        console.log(`[Time Tracking] Time spent on attempt: ${timeSpent} seconds`);
+      }
+      
+      setTotalTimeSpent(prev => {
+        const newTotal = prev + timeSpent;
+        console.log(`[Time Tracking] Total time spent so far: ${newTotal} seconds`);
+        return newTotal;
+      });
+      
+      const requestData = {
+        answer,
+        isCorrect,
+        timeTaken: timeSpent,
+        isCleanup
+      };
+      
+      console.log(`[Time Tracking] Saving attempt result with time: ${timeSpent} seconds`);
+      const response = await axios.put(
+        `${apiUrl}/attempts/${currentAttemptId}/answer`, 
+        requestData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      console.log("[Time Tracking] Attempt result saved successfully");
+    } catch (err) {
+      console.error("[Time Tracking] Failed to save attempt result:", err);
+      if (axios.isAxiosError(err)) {
+        console.error("Error details:", {
+          status: err.response?.status,
+          data: err.response?.data,
+          url: err.config?.url
+        });
+      }
+    }
+  };
+
+  // Modify the navigation to StudentExerciseList
+  const handleNavigation = () => {
+    setIsLeaving(true);
+    if (currentAttemptId) {
+      console.log('[Time Tracking] Saving time before navigation');
+      saveAttemptResult('', false, true);
+    }
+    router.push({
+      pathname: "/student/StudentExerciseList",
+      params: {
+        refresh: "true"
+      }
+    });
+  };
+
+  // Reset timer when starting a new attempt
+  const startNewAttempt = () => {
+    const now = Date.now();
+    setStartTime(now);
+    console.log(`[Time Tracking] Started new attempt timer at: ${new Date(now).toISOString()}`);
+    setIsSolving(true);
+  };
 
   return (
     <BackgroundWrapper nav={true} role={"STUDENT"}>
@@ -325,9 +465,10 @@ export default function StudentLearnScreen() {
                     setIsFrozen(false);
                     setAttemptMade(false); // Reset attempt
                     setIsSolving(false);
+                    startNewAttempt(); // Start timing for new attempt
                   } else {
-                    // Proceed with the first attempt
-                    setIsSolving(!isSolving);
+                    // Start new attempt
+                    startNewAttempt();
                   }
                 }}
               >

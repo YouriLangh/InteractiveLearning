@@ -44,13 +44,13 @@ export default function ChapterScreen() {
   const fetchChapters = async () => {
     try {
       const response = await api.get("/chapters");
-      // Add colors to chapters
-      const chaptersWithColors = response.data.map(
-        (chapter: Chapter, index: number) => ({
+      // Sort chapters by ID (newest last) and add colors
+      const chaptersWithColors = response.data
+        .sort((a: Chapter, b: Chapter) => a.id - b.id)
+        .map((chapter: Chapter, index: number) => ({
           ...chapter,
           color: index % 2 === 0 ? "#A7F7B1" : "#FFD399",
-        })
-      );
+        }));
       setChapters(chaptersWithColors);
     } catch (err) {
       console.error(err);

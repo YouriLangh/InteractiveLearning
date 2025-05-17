@@ -53,6 +53,7 @@ model ExerciseAttempt {
   status        String // Changed from AttemptStatus
   attemptsCount Int
   hintUsedCount Int
+  timeTaken     Int?    // Time taken in seconds, optional
   createdAt     DateTime @default(now())
   studentAnswer String? // Added for storing student's answer
 

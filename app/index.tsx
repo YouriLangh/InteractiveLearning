@@ -29,7 +29,7 @@ export default function Index() {
   }
 
   return (
-    <BackgroundWrapper nav={false}>
+    <BackgroundWrapper nav={false} role="STUDENT">
       <SafeAreaView style={styles.innerContainer}>
         <Text style={styles.title}>Welcome!{"\n"}Login as:</Text>
 
@@ -56,13 +56,6 @@ export default function Index() {
             <Text style={styles.buttonText}>Teacher</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.signupButton}
-          onPress={() => router.push("/auth/SignupScreen")}
-        >
-          <Text style={styles.signupText}>Sign Up</Text>
-        </TouchableOpacity>
       </SafeAreaView>
     </BackgroundWrapper>
   );
@@ -105,17 +98,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  signupButton: {
-    marginTop: 10,
-    backgroundColor: "#DADADA",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-  },
-  signupText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
