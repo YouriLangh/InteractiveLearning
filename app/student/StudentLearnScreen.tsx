@@ -20,63 +20,33 @@ import { useLocalSearchParams } from "expo-router";
 import BackgroundWrapper from "../components/BackgroundWrapper";
 import { getSecureValue } from "@/services/secureStorage";
 import Constants from "expo-constants";
+
+// Set the default sound category to Playback
 Sound.setCategory("Playback");
 
-const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
-
+/**
+ * StudentLearnScreen component
+ * This component is responsible for displaying the camera feed and allowing the student to solve exercises.
+ * It captures images from a remote camera, sends them to a backend server for processing, and provides feedback to the user.
+ * It also tracks the time spent on each exercise and manages attempts.
+ */
 export default function StudentLearnScreen() {
+  // Get parameters from the URL
   const { chapterId, exerciseNr, id, title, stars, answer } =
     useLocalSearchParams();
   const router = useRouter();
-  const CAMERA_SERVER_URL = "http://192.168.1.2:56000"; // IP Webcam server URL
+  const CAMERA_SERVER_URL = "http://192.168.129.2:8080"; // IP Webcam server URL
   const SNAPSHOT_URL = CAMERA_SERVER_URL + "/photo.jpg"; // IP Webcam snapshot endpoint
-  
-  const apiUrl = Constants.expoConfig?.extra?.apiUrl || "http://192.168.1.2:5000/api";
+
+  const apiUrl =
+    Constants.expoConfig?.extra?.apiUrl || "http://192.168.1.2:5000/api"; // Backend base url
   const BACKEND_URL = `${apiUrl}/upload/solve`;
 
-  const [isSolving, setIsSolving] = useState(false);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [showSolveDialogue, setShowSolveDialogue] = useState(false);
-  const [isLoading, setisLoading] = useState(false);
-  const [isFrozen, setIsFrozen] = useState(false);
-  const [attemptMade, setAttemptMade] = useState(false);
-  const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
-  const [hintsUsed, setHintsUsed] = useState<number>(0);
-  const [isLeaving, setIsLeaving] = useState(false);
-
+  // Sound & Animation initialization (Haptic, audio, and visual feedback)
+  const correctSound = new Sound("correct.mp3", Sound.MAIN_BUNDLE);
   const shakeAnim = useRef(new Animated.Value(0)).current;
-  const [detectedDots, setDetectedDots] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
-  const expectedAnswer = parseInt(answer as string, 10);
-  const [isCameraAvailable, setIsCameraAvailable] = useState<boolean | null>(
-    null
-  );
-  async function checkCameraAvailable(camera_server_url: string) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
 
-    try {
-      const res = await fetch(
-        `${camera_server_url}/photo.jpg?cacheBust=${Date.now()}`,
-        {
-          method: "HEAD",
-          signal: controller.signal,
-        }
-      );
-      setIsCameraAvailable(res.ok);
-    } catch (err) {
-      console.warn("Camera server not reachable:", err);
-      setIsCameraAvailable(false);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-  useEffect(() => {
-    checkCameraAvailable(CAMERA_SERVER_URL);
-  }, []);
-
+  // Function to trigger shake animation
   const triggerShake = () => {
     Animated.sequence([
       Animated.timing(shakeAnim, {
@@ -103,6 +73,7 @@ export default function StudentLearnScreen() {
   };
 
   const dialogueShakeAnim = useRef(new Animated.Value(0)).current;
+  // Shake the solve dialogue when the exercise is solved
   const triggerDialogueShake = () => {
     Animated.sequence([
       Animated.timing(dialogueShakeAnim, {
@@ -128,6 +99,7 @@ export default function StudentLearnScreen() {
     ]).start();
   };
 
+  // Function to trigger haptic feedback and vibration
   const vibrateFeedback = (type: "correct" | "wrong") => {
     const pattern = type === "correct" ? [0, 300] : [0, 100, 100, 100];
     Vibration.vibrate(pattern);
@@ -140,13 +112,72 @@ export default function StudentLearnScreen() {
     );
   };
 
+  // State variables
+  const [isSolving, setIsSolving] = useState(false); // Is the solve button pressed?
+  const [imageBase64, setImageBase64] = useState<string | null>(null); // Base64 image data from backend
+  const [showSolveDialogue, setShowSolveDialogue] = useState(false); // Show solve dialogue when exercise is correctly solved
+  const [isLoading, setisLoading] = useState(false); // Is the image being processed?
+  const [isFrozen, setIsFrozen] = useState(false); // Is the camera frozen?
+  const [attemptMade, setAttemptMade] = useState(false); // Has the user made an attempt?
+  const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
+  const [hintsUsed, setHintsUsed] = useState<number>(0);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [detectedDots, setDetectedDots] = useState(0);
+  const [showPreview, setShowPreview] = useState(false); // Show preview of the remote camera
+  const expectedAnswer = parseInt(answer as string, 10);
+  const [isCameraAvailable, setIsCameraAvailable] = useState<boolean | null>(
+    null
+  );
+
+  /**
+   * This function checks if the remote camera is available by sending a HEAD request to the camera server.
+   * It sets the isCameraAvailable state based on the response.
+   * We implement a 2 second timeout to avoid waiting indefinitely for the camera server to respond.
+   * @param camera_server_url - The URL of the camera server.
+   */
+  async function checkCameraAvailable(camera_server_url: string) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+
+    try {
+      // Try to send a HEAD request to the camera server
+      const res = await fetch(
+        `${camera_server_url}/photo.jpg?cacheBust=${Date.now()}`,
+        {
+          method: "HEAD",
+          signal: controller.signal,
+        }
+      );
+      // If the response is ok, set the camera as available
+      setIsCameraAvailable(res.ok);
+    } catch (err) {
+      setIsCameraAvailable(false);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  // Check camera availability when the component mounts
+  useEffect(() => {
+    checkCameraAvailable(CAMERA_SERVER_URL);
+  }, []);
+
+  /**
+   * This effect captures a frame from the camera, processes it, and sends it to the backend for solving.
+   * It also handles the response from the backend, including displaying the result and providing feedback to the user.
+   */
   useEffect(() => {
     if (!isSolving || showPreview || attemptMade || isFrozen) return;
+    // Function to process the captured frame from the remote camera
     const processFrame = async () => {
       try {
         const res = await fetch(`${SNAPSHOT_URL}?cacheBust=${Date.now()}`);
         const blob = await res.blob();
 
+        // Convert the image to base64
+        // Sourced from "Convert Blob to Base64 in JS" by Youri Langhendries
+        // URL: https://geekjob.medium.com/convert-blob-to-base64-in-js-e5808fd69961
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -206,31 +237,38 @@ export default function StudentLearnScreen() {
           return;
         }
 
-        const token = await getSecureValue('authToken');
-        console.log(`[Time Tracking] Creating new attempt for exercise: ${exerciseIdStr}`);
+        const token = await getSecureValue("authToken");
+        console.log(
+          `[Time Tracking] Creating new attempt for exercise: ${exerciseIdStr}`
+        );
 
-        const response = await axios.post(`${apiUrl}/attempts`, 
+        const response = await axios.post(
+          `${apiUrl}/attempts`,
           {
-            exerciseId: exerciseIdStr
+            exerciseId: exerciseIdStr,
           },
           {
             headers: {
-              Authorization: `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
         setCurrentAttemptId(response.data.id);
         const now = Date.now();
         setStartTime(now);
-        console.log(`[Time Tracking] Started timer at: ${new Date(now).toISOString()}`);
-        console.log(`[Time Tracking] Attempt created with ID: ${response.data.id}`);
+        console.log(
+          `[Time Tracking] Started timer at: ${new Date(now).toISOString()}`
+        );
+        console.log(
+          `[Time Tracking] Attempt created with ID: ${response.data.id}`
+        );
       } catch (err) {
         console.error("[Time Tracking] Failed to create attempt:", err);
         if (axios.isAxiosError(err)) {
           console.error("Error details:", {
             status: err.response?.status,
             data: err.response?.data,
-            url: err.config?.url
+            url: err.config?.url,
           });
         }
       }
@@ -243,56 +281,70 @@ export default function StudentLearnScreen() {
   useEffect(() => {
     return () => {
       if (currentAttemptId && !isLeaving) {
-        console.log('[Time Tracking] Component unmounting - saving final time');
+        console.log("[Time Tracking] Component unmounting - saving final time");
         const finalTime = Math.floor((Date.now() - startTime) / 1000);
-        saveAttemptResult('', false, true); // true indicates it's a cleanup save
+        saveAttemptResult("", false, true); // true indicates it's a cleanup save
       }
     };
   }, [currentAttemptId, startTime, isLeaving]);
 
   // Function to save the attempt result
-  const saveAttemptResult = async (answer: string, isCorrect: boolean, isCleanup: boolean = false) => {
+  const saveAttemptResult = async (
+    answer: string,
+    isCorrect: boolean,
+    isCleanup: boolean = false
+  ) => {
     if (!currentAttemptId) {
       console.error("No attempt ID found, cannot save result");
       return;
     }
 
     try {
-      const token = await getSecureValue('authToken');
+      const token = await getSecureValue("authToken");
       const endTime = Date.now();
       const timeSpent = Math.floor((endTime - startTime) / 1000);
-      
+
       if (isCleanup) {
-        console.log(`[Time Tracking] Saving time on exit: ${timeSpent} seconds`);
+        console.log(
+          `[Time Tracking] Saving time on exit: ${timeSpent} seconds`
+        );
       } else {
-        console.log(`[Time Tracking] Stopped timer at: ${new Date(endTime).toISOString()}`);
-        console.log(`[Time Tracking] Time spent on attempt: ${timeSpent} seconds`);
+        console.log(
+          `[Time Tracking] Stopped timer at: ${new Date(endTime).toISOString()}`
+        );
+        console.log(
+          `[Time Tracking] Time spent on attempt: ${timeSpent} seconds`
+        );
       }
-      
-      setTotalTimeSpent(prev => {
+
+      setTotalTimeSpent((prev) => {
         const newTotal = prev + timeSpent;
-        console.log(`[Time Tracking] Total time spent so far: ${newTotal} seconds`);
+        console.log(
+          `[Time Tracking] Total time spent so far: ${newTotal} seconds`
+        );
         return newTotal;
       });
-      
+
       const requestData = {
         answer,
         isCorrect,
         timeTaken: timeSpent,
-        isCleanup
+        isCleanup,
       };
-      
-      console.log(`[Time Tracking] Saving attempt result with time: ${timeSpent} seconds`);
+
+      console.log(
+        `[Time Tracking] Saving attempt result with time: ${timeSpent} seconds`
+      );
       const response = await axios.put(
-        `${apiUrl}/attempts/${currentAttemptId}/answer`, 
+        `${apiUrl}/attempts/${currentAttemptId}/answer`,
         requestData,
         {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-      
+
       console.log("[Time Tracking] Attempt result saved successfully");
     } catch (err) {
       console.error("[Time Tracking] Failed to save attempt result:", err);
@@ -300,7 +352,7 @@ export default function StudentLearnScreen() {
         console.error("Error details:", {
           status: err.response?.status,
           data: err.response?.data,
-          url: err.config?.url
+          url: err.config?.url,
         });
       }
     }
@@ -310,14 +362,14 @@ export default function StudentLearnScreen() {
   const handleNavigation = () => {
     setIsLeaving(true);
     if (currentAttemptId) {
-      console.log('[Time Tracking] Saving time before navigation');
-      saveAttemptResult('', false, true);
+      console.log("[Time Tracking] Saving time before navigation");
+      saveAttemptResult("", false, true);
     }
     router.push({
       pathname: "/student/StudentExerciseList",
       params: {
-        refresh: "true"
-      }
+        refresh: "true",
+      },
     });
   };
 
@@ -325,25 +377,31 @@ export default function StudentLearnScreen() {
   const startNewAttempt = () => {
     const now = Date.now();
     setStartTime(now);
-    console.log(`[Time Tracking] Started new attempt timer at: ${new Date(now).toISOString()}`);
+    console.log(
+      `[Time Tracking] Started new attempt timer at: ${new Date(
+        now
+      ).toISOString()}`
+    );
     setIsSolving(true);
   };
 
   return (
     <BackgroundWrapper nav={true} role={"STUDENT"}>
       <View style={{ flex: 1, alignItems: "center", paddingTop: 30 }}>
+        {/* Header with chapter and exercise number */}
         <Text
           style={{
             fontSize: 26,
             fontFamily: "Poppins-Bold",
             marginBottom: 20,
             width: "85%",
-            lineHeight: 32, // Add line height for better spacing
-            letterSpacing: 1, // Add letter spacing for more readability
+            lineHeight: 32,
+            letterSpacing: 1,
           }}
         >
           Chapter {chapterId}: Exercise {exerciseNr}
         </Text>
+        {/* Title of the exercise */}
         <Text
           style={{
             fontSize: 24,
@@ -353,6 +411,7 @@ export default function StudentLearnScreen() {
         >
           {title}
         </Text>
+
         <Animated.View
           style={[
             styles.cameraContainer,
@@ -363,6 +422,7 @@ export default function StudentLearnScreen() {
             },
           ]}
         >
+          {/* Camera component which shows the live feed or a "Looking for stream" placeholder */}
           {!isFrozen ? (
             isCameraAvailable ? (
               <WebView
@@ -415,6 +475,7 @@ export default function StudentLearnScreen() {
             ></View>
           )}
 
+          {/* Preview of the image captured from the camera after it is processed by the backend*/}
           {imageBase64 && showPreview && (
             <View
               style={[
@@ -443,7 +504,7 @@ export default function StudentLearnScreen() {
               </Text>
             </View>
           )}
-          {/* Loading Indicator */}
+          {/* Loading Indicator when request is being processed by backend*/}
           {isLoading && <LoadingIndicator text={"Loading..."} />}
 
           {/* Solve/ Try again Buttons */}
@@ -465,7 +526,6 @@ export default function StudentLearnScreen() {
                     setIsFrozen(false);
                     setAttemptMade(false); // Reset attempt
                     setIsSolving(false);
-                    startNewAttempt(); // Start timing for new attempt
                   } else {
                     // Start new attempt
                     startNewAttempt();
@@ -498,6 +558,7 @@ export default function StudentLearnScreen() {
           )}
         </Animated.View>
 
+        {/* Solve modal that appears when exercise is solved */}
         {showSolveDialogue && (
           <Modal
             animationType="fade"

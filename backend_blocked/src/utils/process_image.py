@@ -4,6 +4,10 @@ import json
 import base64
 import sys
 
+""" The code in this file is used to process an image and detect circular objects in it.
+    It uses OpenCV for image processing and contour detection. The detected objects are then 
+    highlighted in the original image with bounding boxes, and the result is returned as a JSON object containing
+    the resolution of the image, the count of detected objects, and the processed image encoded in base64."""
 # Load the image
 image_path = sys.argv[1]
 image = cv2.imread(image_path)

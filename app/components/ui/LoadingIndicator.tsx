@@ -2,6 +2,11 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import LottieView from "lottie-react-native";
 
+/**
+ *  A generic loading indicator component that can be used throughout the app.
+ *  It displays a loading animation and an optional text message.
+ * @param text - The text to display below the loading animation. If not provided, no text will be shown.
+ */
 export default function LoadingIndicator({ text }: { text?: string }) {
   return (
     <View
@@ -16,12 +21,14 @@ export default function LoadingIndicator({ text }: { text?: string }) {
       ]}
     >
       <View style={styles.loadingOverlay}>
+        {/* The loading animation using Lottie animation */}
         <LottieView
           style={{ width: 100, height: 150 }}
           source={require("@/assets/animations/Loading_Animation.json")}
           autoPlay
           loop
         />
+        {/* Optional text message below the loading animation */}
         <Text
           style={{
             fontSize: 28,

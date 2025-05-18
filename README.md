@@ -47,6 +47,8 @@ In the output, you'll find options to open the app in:
 
 Normally the app should open automatically on your connected device after the apk is installed. If not, pressing R in the terminal will refresh the app if an error occurred in the app. Pressing A will open the app on the android device again.
 
+5. Update the "apiUrl" field in app.json to your local IP.
+
 ## Setting Up the Video Streaming Service
 
 1. **Install the IP Webcam app** on your Android device.

@@ -18,7 +18,11 @@ const iconSize = width < 400 ? 24 : 32;
 type Props = {
   role: "STUDENT" | "TEACHER";
 };
-
+/**
+ * NavigationBar component that displays a navigation bar with a logo, home button, and user avatar if the user is a student, or a logout button if the user is a teacher.
+ * It also includes a dropdown menu for logging out.
+ * @param role - The role of the user, either "STUDENT" or "TEACHER"
+ */
 export default function NavigationBar({ role }: Props) {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -31,7 +35,7 @@ export default function NavigationBar({ role }: Props) {
 
   return (
     <View style={styles.navbarWrapper}>
-      {/* Background Cubes */}
+      {/* Background Cubes in the Navigation bar */}
       <Image
         source={require("@/assets/images/Cube Asset.png")}
         style={styles.navCenterCube}
@@ -120,7 +124,8 @@ export default function NavigationBar({ role }: Props) {
     </View>
   );
 }
-
+// Styles for the NavigationBar component
+// This includes styles for the navbar, logo, avatar, and dropdown menu
 const styles = StyleSheet.create({
   navbarWrapper: {
     position: "relative",

@@ -7,9 +7,16 @@ type Props = {
   role: "STUDENT" | "TEACHER";
   children: React.ReactNode;
 };
-
+/**
+ * BackgroundWrapper component that provides a background and optional navigation bar.
+ * @param {nav} - If true, the navigation bar will be displayed
+ * @param {role} - The role of the user, either "STUDENT" or "TEACHER"
+ * @param {children} - The children to be rendered inside the wrapper
+ * @returns A wrapper component with a background image and optional navigation bar
+ */
 export default function BackgroundWrapper({ nav, role, children }: Props) {
   return (
+    //  Placing the background images in the correct position
     <View style={styles.container}>
       {/* Bottom right */}
       <Image
@@ -28,8 +35,10 @@ export default function BackgroundWrapper({ nav, role, children }: Props) {
         source={require("@/assets/images/CenterCube.png")}
         style={[styles.cube, styles.cubeLeft]}
       />
-
+      {/* Navigation bar */}
+      {/* This is to prevent the navigation bar from being shown on the login screen */}
       {nav && <NavigationBar role={role} />}
+      {/* The children will be rendered in the center of the screen */}
       {children}
     </View>
   );
