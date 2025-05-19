@@ -359,18 +359,44 @@ export default function StudentLearnScreen() {
   };
 
   // Modify the navigation to StudentExerciseList
-  const handleNavigation = () => {
+  const handleNavigation = async () => {
     setIsLeaving(true);
     if (currentAttemptId) {
       console.log("[Time Tracking] Saving time before navigation");
-      saveAttemptResult("", false, true);
+      try {
+        await saveAttemptResult(
+          detectedDots.toString(),
+          true, // Mark as correct since we only navigate on success
+          false // Not a cleanup save
+        );
+        // Only navigate after the attempt is saved
+        router.push({
+          pathname: "/student/StudentExerciseList",
+          params: {
+            refresh: "true",
+            timestamp: Date.now().toString(), // Add timestamp to force refresh
+          },
+        });
+      } catch (error) {
+        console.error("Failed to save attempt:", error);
+        // Still navigate even if save fails
+        router.push({
+          pathname: "/student/StudentExerciseList",
+          params: {
+            refresh: "true",
+            timestamp: Date.now().toString(),
+          },
+        });
+      }
+    } else {
+      router.push({
+        pathname: "/student/StudentExerciseList",
+        params: {
+          refresh: "true",
+          timestamp: Date.now().toString(),
+        },
+      });
     }
-    router.push({
-      pathname: "/student/StudentExerciseList",
-      params: {
-        refresh: "true",
-      },
-    });
   };
 
   // Reset timer when starting a new attempt

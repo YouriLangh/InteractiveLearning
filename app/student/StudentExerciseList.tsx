@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +32,7 @@ export default function StudentExerciseList() {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { user } = useAuth();
 
   const [chaptersData, setChaptersData] = useState<Chapter[]>([]);
@@ -105,7 +106,7 @@ export default function StudentExerciseList() {
     };
 
     fetchChapters();
-  }, [user?.id]);
+  }, [user?.id, params.refresh, params.timestamp]);
 
   // Calculate mascot position and orange line height based on progress
   const mascotPosition = Math.max(0, (progressBarHeight * progressPercentage / 100) - (mascotSize / 2));

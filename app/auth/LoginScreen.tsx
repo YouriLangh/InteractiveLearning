@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import BackgroundWrapper from "@/app/components/BackgroundWrapper";
-import ReturnButton from "@/app/components/ui/ReturnButton";
 import { useAuth } from "@/context/AuthContext";
 import * as ScreenOrientation from "expo-screen-orientation";
 
@@ -97,7 +96,6 @@ export default function LoginScreen() {
 
   return (
     <BackgroundWrapper nav={false} role={uiRole as "STUDENT" | "TEACHER"}>
-      <ReturnButton />
       <View style={[newStyles.container]}>
         <View style={newStyles.rowContainer}>
           <View style={newStyles.leftSection}>

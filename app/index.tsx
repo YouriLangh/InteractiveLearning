@@ -23,42 +23,13 @@ export default function Index() {
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
   });
 
-  // If user is already logged in, redirect to their dashboard
+  // If user is authenticated, redirect to their dashboard
   if (user) {
     return <Redirect href={user.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList'} />;
   }
 
-  return (
-    <BackgroundWrapper nav={false} role="STUDENT">
-      <SafeAreaView style={styles.innerContainer}>
-        <Text style={styles.title}>Welcome!{"\n"}Login as:</Text>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push("/auth/LoginScreen?role=student")}
-          >
-            <Image
-              source={require("@/assets/images/student-icon.png")}
-              style={styles.icon}
-            />
-            <Text style={styles.buttonText}>Student</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push("/auth/LoginScreen?role=teacher")}
-          >
-            <Image
-              source={require("@/assets/images/teacher-icon.png")}
-              style={styles.icon}
-            />
-            <Text style={styles.buttonText}>Teacher</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </BackgroundWrapper>
-  );
+  // If user is not authenticated, redirect to login page
+  return <Redirect href="/auth/LoginScreen?role=student" />;
 }
 
 const styles = StyleSheet.create({
