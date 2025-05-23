@@ -1,7 +1,7 @@
 # Welcome to BlockEd 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).  
-Note before the documentation, none of this has been tested on Unix or iOS.
+Note before the documentation, none of this has been tested on Unix or iOS, we only guarantee that the app works on Android.
 
 ## Get started
 
