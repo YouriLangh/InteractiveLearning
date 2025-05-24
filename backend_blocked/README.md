@@ -87,7 +87,7 @@ cd backend_blocked
 npm install
 ```
 
-3. Setup your `.env` file (ask me for the Prisma DB API key):
+3. Setup your `.env` file :
 ```env
 DATABASE_URL="file:./dev.db"
 PORT=5000
