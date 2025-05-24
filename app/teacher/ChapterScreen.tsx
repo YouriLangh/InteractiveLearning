@@ -1,3 +1,5 @@
+// This is the screen where teachers can manage chapters and exercises
+// Teachers can add new chapters, view existing ones, and add exercises to each chapter
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -16,11 +18,13 @@ import ReturnButton from "@/app/components/ui/ReturnButton";
 import { Ionicons } from "@expo/vector-icons";
 
 /* ====== Types ====== */
+// What an exercise looks like in our data
 interface Exercise {
   id: number;
   title: string;
 }
 
+// What a chapter looks like in our data
 interface Chapter {
   id: number;
   title: string;
@@ -33,14 +37,17 @@ export default function ChapterScreen() {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
+  // Store our chapters and loading state
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("chapters");
 
+  // For adding new chapters
   const [addChapterVisible, setAddChapterVisible] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
 
+  // Get all chapters from the server
   const fetchChapters = async () => {
     try {
       const response = await api.get("/chapters");
@@ -60,10 +67,12 @@ export default function ChapterScreen() {
     }
   };
 
+  // Load chapters when the screen opens
   useEffect(() => {
     fetchChapters();
   }, []);
 
+  // Create a new chapter
   const createChapter = async () => {
     if (!newChapterTitle.trim()) return;
 
@@ -77,6 +86,7 @@ export default function ChapterScreen() {
     }
   };
 
+  // Show loading screen while getting chapters
   if (loading) {
     return (
       <BackgroundWrapper nav={true} role={"TEACHER"}>
@@ -87,6 +97,7 @@ export default function ChapterScreen() {
     );
   }
 
+  // Show error if something went wrong
   if (error) {
     return (
       <BackgroundWrapper nav={true} role={"TEACHER"}>
@@ -100,8 +111,10 @@ export default function ChapterScreen() {
   return (
     <BackgroundWrapper nav={true} role={"TEACHER"}>
       <View style={styles.container}>
+        {/* Top navigation bar */}
         <View style={styles.headerContainer}>
           <View style={styles.tabContainer}>
+            {/* Switch between Students and Chapters views */}
             <TouchableOpacity
               style={styles.tabButton}
               onPress={() => router.push("/teacher/ProfileScreen")}
@@ -129,6 +142,7 @@ export default function ChapterScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+          {/* Button to add a new chapter */}
           <TouchableOpacity
             style={styles.addChapterButton}
             onPress={() => setAddChapterVisible(true)}
@@ -137,6 +151,7 @@ export default function ChapterScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* List of all chapters */}
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -149,6 +164,7 @@ export default function ChapterScreen() {
                 { backgroundColor: chapter.color || "#F0F0F0" },
               ]}
             >
+              {/* Chapter header with title and add exercise button */}
               <View style={styles.chapterHeader}>
                 <Text style={styles.chapterTitle}>
                   {`Chapter ${index + 1}: ${chapter.title} (${
@@ -168,6 +184,7 @@ export default function ChapterScreen() {
                 </TouchableOpacity>
               </View>
 
+              {/* List of exercises in this chapter */}
               {chapter.exercises.map((exercise) => (
                 <TouchableOpacity
                   key={exercise.id}
@@ -183,6 +200,7 @@ export default function ChapterScreen() {
                   }
                 >
                   <Text style={styles.exerciseText}>{exercise.title}</Text>
+                  {/* Edit button for each exercise */}
                   <TouchableOpacity
                     onPress={() =>
                       router.push({
@@ -202,6 +220,7 @@ export default function ChapterScreen() {
           ))}
         </ScrollView>
 
+        {/* Popup for adding a new chapter */}
         <Modal visible={addChapterVisible} transparent animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -232,6 +251,7 @@ export default function ChapterScreen() {
   );
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,3 +1,5 @@
+// This is the first screen that loads when you open the app
+// It checks if you're logged in and sends you to the right screen
 import React, { useEffect } from "react";
 import {
   View,
@@ -18,20 +20,25 @@ const { width } = Dimensions.get("window");
 export default function Index() {
   const router = useRouter();
   const { user } = useAuth();
+  
+  // Load the custom fonts we use in the app
   const [fontsLoaded] = useFonts({
     "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
   });
 
-  // If user is authenticated, redirect to their dashboard
+  // If you're already logged in, go to your dashboard
+  // Teachers go to their profile, students go to their exercise list
   if (user) {
     return <Redirect href={user.role === 'TEACHER' ? '/teacher/ProfileScreen' : '/student/StudentExerciseList'} />;
   }
 
-  // If user is not authenticated, redirect to login page
+  // If you're not logged in, go to the login screen
+  // Start with the student login option
   return <Redirect href="/auth/LoginScreen?role=student" />;
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,

@@ -1,3 +1,5 @@
+// This is the screen where teachers can see detailed progress for a student
+// Teachers can see how well the student is doing in each chapter and exercise
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -25,11 +27,13 @@ export default function StudentDetailScreen() {
   const studentIdStr = Array.isArray(studentId) ? studentId[0] : studentId;
   const [activeTab, setActiveTab] = useState('students');
 
+  // Store student's progress data
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expandedChapters, setExpandedChapters] = useState<{ [key: number]: boolean }>({});
   const [showReport, setShowReport] = useState(false);
 
+  // Load student's progress when the screen opens
   useEffect(() => {
     const fetchStudentProgress = async () => {
       if (!studentIdStr) return;
@@ -38,7 +42,7 @@ export default function StudentDetailScreen() {
         const response = await api.get(`/progress/${studentIdStr}`);
         console.log('Progress data:', response.data);
         
-        // Sort chapters by ID
+        // Sort chapters by ID (oldest first)
         const sortedData = {
           ...response.data,
           chapters: response.data.chapters.sort((a: any, b: any) => a.id - b.id)
@@ -46,7 +50,7 @@ export default function StudentDetailScreen() {
         
         setData(sortedData);
 
-        // Default expand all chapters
+        // Show all chapters expanded by default
         const expandedMap: { [key: number]: boolean } = {};
         if (sortedData?.chapters) {
           sortedData.chapters.forEach((chapter: any) => {
@@ -64,6 +68,7 @@ export default function StudentDetailScreen() {
     fetchStudentProgress();
   }, [studentIdStr]);
 
+  // Toggle chapter expansion
   const toggleChapter = (chapterId: number) => {
     setExpandedChapters((prev) => ({
       ...prev,
@@ -71,16 +76,19 @@ export default function StudentDetailScreen() {
     }));
   };
 
+  // Get background color for exercise based on attempts
   const getExerciseBackgroundColor = (attempts: boolean[]) => {
     if (!attempts || attempts.length === 0) return '#fff'; // Not started - white
     return attempts.some(attempt => attempt) ? '#e6ffe6' : '#fff'; // Solved - light green, others - white
   };
 
+  // Get the last 3 attempts for an exercise
   const getLastAttempts = (attempts: boolean[]) => {
     if (!attempts || attempts.length === 0) return [];
     return attempts.slice(-3).map(attempt => attempt ? '✓' : '✗');
   };
 
+  // Create HTML for the student's progress report
   const generateReportHTML = () => {
     const currentDate = new Date().toLocaleDateString();
     const totalExercises = data.chapters.reduce((acc: number, chapter: any) => 
@@ -89,6 +97,7 @@ export default function StudentDetailScreen() {
       acc + (chapter.exercises?.filter((ex: any) => ex.attempts?.some((a: boolean) => a))?.length || 0), 0);
     const successRate = totalExercises > 0 ? ((solvedExercises / totalExercises) * 100).toFixed(1) : 0;
 
+    // Create HTML with student's progress
     let html = `
       <html>
         <head>
@@ -125,12 +134,14 @@ export default function StudentDetailScreen() {
           </div>
     `;
 
+    // Add each chapter's progress
     data.chapters.forEach((chapter: any) => {
       html += `
         <div class="chapter">
           <div class="chapter-title">${chapter.title}</div>
       `;
 
+      // Add each exercise's details
       chapter.exercises?.forEach((exercise: any) => {
         const isSolved = exercise.attempts?.some((a: boolean) => a);
         const attempts = exercise.attempts?.length || 0;
@@ -168,10 +179,12 @@ export default function StudentDetailScreen() {
     return html;
   };
 
+  // Show the progress report
   const handleShowReport = () => {
     setShowReport(true);
   };
 
+  // Show loading screen while getting student data
   if (loading) {
     return (
       <BackgroundWrapper nav={true} role="TEACHER">
@@ -182,6 +195,7 @@ export default function StudentDetailScreen() {
     );
   }
 
+  // Show message if no data found
   if (!data || !data.chapters || data.chapters.length === 0) {
     return (
       <BackgroundWrapper nav={true} role="TEACHER">
@@ -195,6 +209,7 @@ export default function StudentDetailScreen() {
   return (
     <BackgroundWrapper nav={true} role="TEACHER">
       <View style={styles.container}>
+        {/* Top navigation bar */}
         <View style={styles.headerContainer}>
           <ReturnButton />
           <View style={styles.tabContainer}>
@@ -218,6 +233,7 @@ export default function StudentDetailScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Student info and report button */}
           <View style={styles.topRow}>
             <Image
               source={require('@/assets/images/avatar.png')}
@@ -232,8 +248,10 @@ export default function StudentDetailScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* List of chapters and exercises */}
           {data.chapters.map((chapter: any) => (
             <View key={chapter.id} style={styles.chapterContainer}>
+              {/* Chapter header with expand/collapse button */}
               <TouchableOpacity
                 style={styles.chapterHeader}
                 onPress={() => toggleChapter(chapter.id)}
@@ -249,6 +267,7 @@ export default function StudentDetailScreen() {
                 />
               </TouchableOpacity>
 
+              {/* Show exercises if chapter is expanded */}
               {expandedChapters[chapter.id] && (
                 <View style={styles.exercisesContainer}>
                   {chapter.exercises?.map((exercise: any, index: number) => (
@@ -259,6 +278,7 @@ export default function StudentDetailScreen() {
                           styles.exerciseContent,
                           { backgroundColor: getExerciseBackgroundColor(exercise.attempts) }
                         ]}>
+                          {/* Exercise title and solved status */}
                           <View style={styles.exerciseHeader}>
                             <Text style={styles.exerciseTitle}>
                               {exercise.title}
@@ -268,6 +288,7 @@ export default function StudentDetailScreen() {
                             )}
                           </View>
 
+                          {/* Exercise details */}
                           <View style={styles.detailsRow}>
                             <Text style={styles.detailsText}>
                               Time taken: {formatTime(exercise.timeTaken)}
@@ -279,6 +300,7 @@ export default function StudentDetailScreen() {
                               Attempts: {exercise.attempts ? exercise.attempts.length : 0}
                             </Text>
                           </View>
+                          {/* Show last 3 attempts */}
                           {exercise.attempts && exercise.attempts.length > 0 && (
                             <View style={styles.lastAttemptsRow}>
                               <Text style={styles.lastAttemptsLabel}>Recent attempts:</Text>
@@ -307,6 +329,7 @@ export default function StudentDetailScreen() {
           ))}
         </ScrollView>
 
+        {/* Progress report popup */}
         <Modal
           visible={showReport}
           animationType="slide"
@@ -315,6 +338,7 @@ export default function StudentDetailScreen() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
+              {/* Report header with close button */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Student Progress Report</Text>
                 <TouchableOpacity 
@@ -326,12 +350,14 @@ export default function StudentDetailScreen() {
               </View>
 
               <ScrollView style={styles.reportContent}>
+                {/* Overall progress section */}
                 <View style={styles.reportSection}>
                   <Text style={styles.sectionTitle}>Overall Progress</Text>
                   {(() => {
                     const benchmarks = calculateBenchmarks(data);
                     return (
                       <>
+                        {/* Key metrics */}
                         <View style={styles.benchmarkGrid}>
                           <View style={styles.benchmarkItem}>
                             <Text style={styles.benchmarkValue}>{benchmarks.successRate}%</Text>
@@ -351,6 +377,7 @@ export default function StudentDetailScreen() {
                           </View>
                         </View>
 
+                        {/* Insights about student's performance */}
                         <View style={styles.insightsContainer}>
                           <Text style={styles.insightsTitle}>Key Insights</Text>
                           {getInsights(benchmarks).map((insight, index) => (
@@ -365,6 +392,7 @@ export default function StudentDetailScreen() {
                   })()}
                 </View>
 
+                {/* Chapter progress section */}
                 <View style={styles.reportSection}>
                   <Text style={styles.sectionTitle}>Chapter Progress</Text>
                   {data.chapters.map((chapter: any) => (
@@ -374,6 +402,7 @@ export default function StudentDetailScreen() {
                         const isSolved = exercise.attempts?.some((a: boolean) => a);
                         return (
                           <View key={exercise.id} style={styles.exerciseReport}>
+                            {/* Exercise title and solved status */}
                             <View style={styles.exerciseReportHeader}>
                               <Text style={styles.exerciseReportTitle}>{exercise.title}</Text>
                               {isSolved && (
@@ -382,6 +411,7 @@ export default function StudentDetailScreen() {
                                 </View>
                               )}
                             </View>
+                            {/* Exercise statistics */}
                             <View style={styles.exerciseStats}>
                               <Text style={styles.exerciseStat}>
                                 Time: {formatTime(exercise.timeTaken)}
@@ -408,6 +438,7 @@ export default function StudentDetailScreen() {
   );
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   container: {
     flex: 1,

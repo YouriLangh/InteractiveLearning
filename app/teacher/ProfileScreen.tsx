@@ -1,3 +1,5 @@
+// This is the teacher's profile screen where they can see all their students
+// Teachers can see each student's success rate and add new students
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -20,17 +22,20 @@ export default function ProfileScreen() {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Load all students and their progress when the screen opens
   useEffect(() => {
     const fetchStudents = async () => {
       try {
+        // Get all students
         const response = await api.get("/users/students");
+        // Get progress for each student
         const studentsWithProgress = await Promise.all(
           response.data.map(async (student: any) => {
             try {
               const progressResponse = await api.get(`/progress/${student.id}`);
               const progress = progressResponse.data;
               
-              // Calculate success rate
+              // Calculate how well the student is doing
               const totalExercises = progress.chapters.reduce((acc: number, chapter: any) => 
                 acc + (chapter.exercises?.length || 0), 0);
               const solvedExercises = progress.chapters.reduce((acc: number, chapter: any) => 
@@ -67,6 +72,7 @@ export default function ProfileScreen() {
   return (
     <BackgroundWrapper nav={true} role={"TEACHER"}>
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Top navigation bar */}
         <View style={styles.headerRow}>
           <TouchableOpacity
             onPress={() => router.push("/teacher/ProfileScreen")}
@@ -88,6 +94,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Button to add a new student */}
         <View style={styles.actionRow}>
           <TouchableOpacity 
             style={styles.addButton}
@@ -97,6 +104,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Show loading message while getting student data */}
         {loading ? (
           <View style={styles.centered}>
             <Text style={styles.loadingText}>Loading students...</Text>
@@ -117,12 +125,14 @@ export default function ProfileScreen() {
                   })
                 }
               >
+                {/* Student avatar */}
                 <TouchableOpacity style={styles.avatar}>
                   <Image
                     source={require("@/assets/images/avatar.png")}
                     style={styles.avatar}
                   />
                 </TouchableOpacity>
+                {/* Student name and success rate */}
                 <View style={styles.infoText}>
                   <Text style={styles.name}>{student.name}</Text>
                   <Text style={styles.label}>Success Rate: {student.successRate}%</Text>
@@ -136,6 +146,7 @@ export default function ProfileScreen() {
   );
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   container: {
     padding: 16,

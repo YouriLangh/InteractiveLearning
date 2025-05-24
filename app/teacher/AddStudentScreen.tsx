@@ -1,3 +1,5 @@
+// This is the screen where teachers can add new students to the platform
+// Teachers can enter a student's name and either type or generate a login code
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -15,25 +17,32 @@ import ReturnButton from '@/app/components/ui/ReturnButton';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
 
+// Get screen size to make things look good on all devices
 const { width, height } = Dimensions.get('window');
 
 export default function AddStudentScreen() {
   const router = useRouter();
+  
+  // Store what the teacher types in the input fields
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Create a random 4-digit code for the student
   const generateRandomCode = () => {
     const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
     setCode(randomCode);
   };
 
+  // Handle the create account button press
   const handleSubmit = async () => {
+    // Check if name is empty
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a student name');
       return;
     }
 
+    // Check if code is empty
     if (!code.trim()) {
       Alert.alert('Error', 'Please enter a code or generate one');
       return;
@@ -42,12 +51,14 @@ export default function AddStudentScreen() {
     setIsLoading(true);
 
     try {
+      // Try to create a new student account
       await api.post('/auth/signup', {
         name,
         code,
         role: 'STUDENT'
       });
 
+      // Show success message and go back to profile screen
       Alert.alert(
         'Success', 
         `Student account created successfully!\nName: ${name}\nCode: ${code}`,
@@ -72,10 +83,13 @@ export default function AddStudentScreen() {
   return (
     <BackgroundWrapper nav={true} role="TEACHER">
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Back button to go to previous screen */}
         <ReturnButton />
         <Text style={styles.title}>Add New Student</Text>
         
+        {/* Form for adding a new student */}
         <View style={styles.form}>
+          {/* Student name input */}
           <Text style={styles.label}>Student Name</Text>
           <TextInput
             style={styles.input}
@@ -85,6 +99,7 @@ export default function AddStudentScreen() {
             placeholderTextColor="#999"
           />
           
+          {/* Login code section with generate button */}
           <View style={styles.codeContainer}>
             <View style={styles.codeInputContainer}>
               <Text style={styles.label}>Login Code</Text>
@@ -98,6 +113,7 @@ export default function AddStudentScreen() {
               />
             </View>
             
+            {/* Button to generate a random code */}
             <TouchableOpacity 
               style={styles.generateButton}
               onPress={generateRandomCode}
@@ -106,6 +122,7 @@ export default function AddStudentScreen() {
             </TouchableOpacity>
           </View>
           
+          {/* Create account button - disabled if fields are empty */}
           <TouchableOpacity
             style={[styles.submitButton, (!name || !code) && styles.disabledButton]}
             onPress={handleSubmit}
@@ -118,6 +135,7 @@ export default function AddStudentScreen() {
             )}
           </TouchableOpacity>
           
+          {/* Help text explaining what this does */}
           <Text style={styles.helperText}>
             This will create a student account that can access the platform using the name
             and code provided. Make sure to share these credentials with the student.
@@ -128,6 +146,7 @@ export default function AddStudentScreen() {
   );
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

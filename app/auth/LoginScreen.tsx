@@ -1,3 +1,5 @@
+// This is the login screen where students and teachers can sign in
+// It has a nice design with a mascot and floating cubes
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -15,6 +17,7 @@ import BackgroundWrapper from "@/app/components/BackgroundWrapper";
 import { useAuth } from "@/context/AuthContext";
 import * as ScreenOrientation from "expo-screen-orientation";
 
+// This is what we get back from the server when login is successful
 interface LoginResponse {
   token: string;
   user: {
@@ -28,13 +31,17 @@ export default function LoginScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { login } = useAuth();
+  
+  // Store what the user types in the input fields
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const uiRole = params.role?.toString()?.toUpperCase() || "STUDENT";
   const isTeacherUI = uiRole === "TEACHER";
 
+  // Keep track of if the phone is in portrait or landscape mode
   const [orientation, setOrientation] = useState("PORTRAIT");
 
+  // Check and update screen orientation when it changes
   useEffect(() => {
     const getOrientation = async () => {
       const orientationResult = await ScreenOrientation.getOrientationAsync();
@@ -50,6 +57,7 @@ export default function LoginScreen() {
 
     getOrientation();
 
+    // Listen for when the user rotates their phone
     const subscription = ScreenOrientation.addOrientationChangeListener(
       (evt) => {
         const { orientation: newOrientation } = evt.orientationInfo;
@@ -64,20 +72,24 @@ export default function LoginScreen() {
       }
     );
 
+    // Clean up when we leave this screen
     return () => {
       ScreenOrientation.removeOrientationChangeListener(subscription);
     };
   }, []);
 
+  // Handle the login button press
   const handleLogin = async () => {
     try {
+      // Try to log in with the name and code
       const response = await login(name, code, uiRole as "STUDENT" | "TEACHER");
 
-      // Ensure we have a valid response with user data
+      // Make sure we got good data back
       if (!response || !response.user || !response.user.role) {
         throw new Error("Invalid user data received");
       }
 
+      // Send users to different screens based on their role
       const userRole = response.user.role.toUpperCase();
       if (userRole === "TEACHER") {
         router.replace("/teacher/ProfileScreen");
@@ -89,6 +101,7 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error("Login failed:", error);
       alert(error?.message || "Login failed. Please try again.");
+      // Clear the input fields if login fails
       setName("");
       setCode("");
     }
@@ -98,6 +111,7 @@ export default function LoginScreen() {
     <BackgroundWrapper nav={false} role={uiRole as "STUDENT" | "TEACHER"}>
       <View style={[newStyles.container]}>
         <View style={newStyles.rowContainer}>
+          {/* Left side with mascot and floating cubes */}
           <View style={newStyles.leftSection}>
             <Image
               source={require("@/assets/images/mascott_tr.png")}
@@ -117,7 +131,9 @@ export default function LoginScreen() {
             />
           </View>
 
+          {/* Right side with login form */}
           <View style={newStyles.rightSection}>
+            {/* App title */}
             <View
               style={{ display: "flex", flexDirection: "row", width: "100%" }}
             >
@@ -126,6 +142,8 @@ export default function LoginScreen() {
               <Text style={[newStyles.title, { color: "#487D33" }]}>Ed</Text>
               <Text style={[newStyles.title]}>!</Text>
             </View>
+
+            {/* Show avatar selection only for students */}
             {!isTeacherUI && (
               <>
                 <Text
@@ -144,6 +162,8 @@ export default function LoginScreen() {
                 />
               </>
             )}
+
+            {/* Login form inputs */}
             <View style={{ width: "100%" }}>
               <TextInput
                 placeholder="Enter your name"
@@ -158,9 +178,11 @@ export default function LoginScreen() {
                 placeholderTextColor="#ccc"
                 value={code}
                 onChangeText={setCode}
-                secureTextEntry={isTeacherUI}
+                secureTextEntry={isTeacherUI} // Hide code for teachers
               />
             </View>
+
+            {/* Login button - green when fields are filled */}
             <TouchableOpacity
               style={[
                 newStyles.goButton,
@@ -174,6 +196,7 @@ export default function LoginScreen() {
               <Text style={newStyles.goButtonText}>GO</Text>
             </TouchableOpacity>
             
+            {/* Show signup link only for teachers */}
             {isTeacherUI && (
               <TouchableOpacity
                 onPress={() => router.push("/auth/SignupScreen")}
@@ -185,6 +208,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
             
+            {/* Switch between student and teacher login */}
             <TouchableOpacity
               onPress={() =>
                 router.push(
@@ -206,6 +230,7 @@ export default function LoginScreen() {
   );
 }
 
+// Styles for making the screen look nice
 const newStyles = StyleSheet.create({
   mascot: {
     width: 180,

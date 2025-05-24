@@ -70,7 +70,7 @@ model StudentProgress {
   chapterId          Int
   completedExercises Int
   successRate        Float
-  lastUpdated        DateTime @default(now()) // Renamed from createdAt
+  lastUpdated        DateTime @default(now()) 
 
   student User    @relation(fields: [studentId], references: [id])
   chapter Chapter @relation(fields: [chapterId], references: [id])

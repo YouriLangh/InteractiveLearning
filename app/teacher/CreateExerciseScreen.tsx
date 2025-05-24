@@ -1,3 +1,5 @@
+// This is the screen where teachers can create or edit exercises
+// Teachers can set the title, description, difficulty, and correct answer
 import React, { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -17,9 +19,12 @@ export default function CreateExerciseScreen() {
   const router = useRouter();
   const { chapterId, exerciseId, mode } = useLocalSearchParams();
 
+  // Get the IDs from the URL and check if we're in view mode
   const chapterIdStr = Array.isArray(chapterId) ? chapterId[0] : chapterId;
   const exerciseIdStr = Array.isArray(exerciseId) ? exerciseId[0] : exerciseId;
   const isViewMode = mode === "view";
+
+  // Store what the teacher types in the input fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [stars, setStars] = useState("0");
@@ -29,6 +34,7 @@ export default function CreateExerciseScreen() {
   const [answer, setAnswer] = useState("0");
   const [loading, setLoading] = useState(false);
 
+  // Load exercise data if we're editing an existing exercise
   useEffect(() => {
     const fetchExercise = async () => {
       if (!exerciseIdStr) return;
@@ -52,7 +58,9 @@ export default function CreateExerciseScreen() {
     fetchExercise();
   }, [exerciseIdStr]);
 
+  // Save the exercise when the teacher clicks the save button
   const saveExercise = async () => {
+    // Check if required fields are filled
     if (!title.trim()) {
       Alert.alert("Validation", "Please enter a title.");
       return;
@@ -66,6 +74,7 @@ export default function CreateExerciseScreen() {
     setLoading(true);
 
     try {
+      // Prepare the data to send to the server
       const payload = {
         title,
         description,
@@ -76,6 +85,7 @@ export default function CreateExerciseScreen() {
         answer: parseInt(answer),
       };
 
+      // Update existing exercise or create a new one
       if (exerciseIdStr) {
         await api.put(`/exercises/${exerciseIdStr}`, payload);
       } else {
@@ -90,6 +100,7 @@ export default function CreateExerciseScreen() {
         });
       }
 
+      // Show success message and go back
       Alert.alert("Success", "Exercise saved successfully.", [
         { text: "OK", onPress: () => router.back() },
       ]);
@@ -106,6 +117,7 @@ export default function CreateExerciseScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <ReturnButton />
         <View style={styles.formBox}>
+          {/* Show different title based on what we're doing */}
           <Text style={styles.header}>
             {isViewMode
               ? "View Exercise"
@@ -114,6 +126,7 @@ export default function CreateExerciseScreen() {
               : "Create Exercise"}
           </Text>
 
+          {/* Exercise title input */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Title:</Text>
             <TextInput
@@ -125,6 +138,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
+          {/* Exercise description input */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Description:</Text>
             <TextInput
@@ -137,18 +151,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
-          {/* <View style={styles.formGroup}>
-            <Text style={styles.label}>Stars (0-5):</Text>
-            <TextInput
-              placeholder="Enter stars"
-              value={stars}
-              onChangeText={setStars}
-              style={styles.input}
-              keyboardType="number-pad"
-              editable={!isViewMode}
-            />
-          </View> */}
-
+          {/* Who can see this exercise */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Visible To:</Text>
             <View style={styles.selectContainer}>
@@ -179,6 +182,7 @@ export default function CreateExerciseScreen() {
             </View>
           </View>
 
+          {/* Exercise difficulty (1-5) */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Difficulty (1-5):</Text>
             <TextInput
@@ -191,6 +195,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
+          {/* Exercise order in the chapter */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Order:</Text>
             <TextInput
@@ -203,6 +208,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
+          {/* Correct answer for the exercise */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Correct Answer:</Text>
             <TextInput
@@ -215,6 +221,7 @@ export default function CreateExerciseScreen() {
             />
           </View>
 
+          {/* Save button - only show if not in view mode */}
           {!isViewMode && (
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -238,6 +245,7 @@ export default function CreateExerciseScreen() {
   );
 }
 
+// Styles for making the screen look nice on all devices
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 40,

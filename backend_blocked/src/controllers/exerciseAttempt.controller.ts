@@ -1,3 +1,5 @@
+// This file handles everything about exercise attempts
+// It helps track when students try exercises and their answers
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { updateSuccessRateAfterAttempt } from './studentProgress.controller';
@@ -15,16 +17,18 @@ interface SubmitAnswerBody {
   isCleanup?: boolean;
 }
 
+// Create a new attempt for an exercise
 export const createAttempt = async (req: Request<{}, {}, CreateAttemptBody>, res: Response) => {
   try {
     const { exerciseId } = req.body;
     const studentId = req.user.id;
 
+    // Make sure we have an exercise ID
     if (!exerciseId) {
       return res.status(400).json({ message: 'Exercise ID is required' });
     }
 
-    // Verify exercise exists
+    // Check if the exercise exists
     const exercise = await prisma.exercise.findUnique({
       where: { id: parseInt(exerciseId) }
     });
@@ -33,6 +37,7 @@ export const createAttempt = async (req: Request<{}, {}, CreateAttemptBody>, res
       return res.status(404).json({ message: 'Exercise not found' });
     }
 
+    // Create a new attempt
     const attempt = await prisma.exerciseAttempt.create({
       data: {
         exerciseId: parseInt(exerciseId),
@@ -51,14 +56,17 @@ export const createAttempt = async (req: Request<{}, {}, CreateAttemptBody>, res
   }
 };
 
+// Get details of a specific attempt
 export const getAttempt = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Check if the attempt ID is valid
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ message: 'Invalid attempt ID' });
     }
 
+    // Find the attempt
     const attempt = await prisma.exerciseAttempt.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -70,7 +78,7 @@ export const getAttempt = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Attempt not found' });
     }
 
-    // Check if user has access to this attempt
+    // Make sure only the student or their teacher can see this
     if (attempt.studentId !== req.user.id && req.user.role !== 'TEACHER') {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -82,15 +90,17 @@ export const getAttempt = async (req: Request, res: Response) => {
   }
 };
 
+// Get all attempts for a specific exercise
 export const getAttemptsByExercise = async (req: Request, res: Response) => {
   try {
     const { exerciseId } = req.params;
 
+    // Check if the exercise ID is valid
     if (!exerciseId || isNaN(parseInt(exerciseId))) {
       return res.status(400).json({ message: 'Invalid exercise ID' });
     }
 
-    // Verify exercise exists
+    // Check if the exercise exists
     const exercise = await prisma.exercise.findUnique({
       where: { id: parseInt(exerciseId) }
     });
@@ -99,6 +109,7 @@ export const getAttemptsByExercise = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Exercise not found' });
     }
 
+    // Get all attempts for this exercise by this student
     const attempts = await prisma.exerciseAttempt.findMany({
       where: { 
         exerciseId: parseInt(exerciseId),
@@ -116,19 +127,22 @@ export const getAttemptsByExercise = async (req: Request, res: Response) => {
   }
 };
 
+// Get all attempts by a specific student
 export const getAttemptsByStudent = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
 
+    // Check if the student ID is valid
     if (!studentId || isNaN(parseInt(studentId))) {
       return res.status(400).json({ message: 'Invalid student ID' });
     }
 
-    // Only teachers or the student themselves can view their attempts
+    // Only teachers or the student themselves can see their attempts
     if (req.user.id !== parseInt(studentId) && req.user.role !== 'TEACHER') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Get all attempts by this student
     const attempts = await prisma.exerciseAttempt.findMany({
       where: { studentId: parseInt(studentId) },
       include: {
@@ -146,6 +160,7 @@ export const getAttemptsByStudent = async (req: Request, res: Response) => {
   }
 };
 
+// Submit an answer for an attempt
 export const submitStudentAnswer = async (req: Request<{ id: string }, {}, SubmitAnswerBody>, res: Response) => {
   try {
     const { id } = req.params;
@@ -157,20 +172,23 @@ export const submitStudentAnswer = async (req: Request<{ id: string }, {}, Submi
       console.log('[Time Tracking] This is a cleanup save (student left the exercise)');
     }
 
+    // Check if the attempt ID is valid
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ message: 'Invalid attempt ID' });
     }
 
+    // Make sure we have an answer (unless it's a cleanup)
     if (!answer && !isCleanup) {
       return res.status(400).json({ message: 'Answer is required' });
     }
 
+    // Check if the time taken is valid
     if (typeof timeTaken !== 'number' || timeTaken < 0) {
       console.error(`[Time Tracking] Invalid time value received: ${timeTaken}`);
       return res.status(400).json({ message: 'Invalid time taken value' });
     }
 
-    // Verify attempt exists and belongs to the student
+    // Find the attempt and make sure it belongs to this student
     const existingAttempt = await prisma.exerciseAttempt.findUnique({
       where: { id: parseInt(id) }
     });
@@ -183,6 +201,7 @@ export const submitStudentAnswer = async (req: Request<{ id: string }, {}, Submi
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Update the attempt with the answer and time
     console.log(`[Time Tracking] Updating attempt ${id} with time: ${timeTaken} seconds`);
     const attempt = await prisma.exerciseAttempt.update({
       where: { id: parseInt(id) },
@@ -199,7 +218,7 @@ export const submitStudentAnswer = async (req: Request<{ id: string }, {}, Submi
     console.log(`[Time Tracking] Successfully saved time for attempt ${id}`);
     console.log(`[Time Tracking] Final time saved to database: ${timeTaken} seconds`);
 
-    // Update success rate after attempt (only if not cleanup)
+    // Update the student's success rate (only if not cleanup)
     if (!isCleanup) {
       await updateSuccessRateAfterAttempt(req.user.id);
     }

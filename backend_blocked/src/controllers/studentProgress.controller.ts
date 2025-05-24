@@ -115,10 +115,10 @@ export const getStudentFullProgress = async (req: Request, res: Response) => {
         const hintsUsed = exercise.attempts.reduce((sum, attempt) => sum + (attempt.hintUsedCount || 0), 0);
         const attempts = exercise.attempts.map((attempt) => attempt.status === "PASSED");
         const timeTaken = exercise.attempts.length > 0 
-          ? parseInt(exercise.attempts[exercise.attempts.length - 1].timeTaken || '0', 10)
+          ? parseInt(String(exercise.attempts[exercise.attempts.length - 1].timeTaken || '0'), 10)
           : 0;
         const totalTimeSpent = exercise.attempts.reduce((sum, attempt) => 
-          sum + parseInt(attempt.timeTaken || '0', 10), 0
+          sum + parseInt(String(attempt.timeTaken || '0'), 10), 0
         );
         
         console.log(`Exercise ${exercise.id} - Hints: ${hintsUsed}, Attempts: ${attempts.length}, Time: ${timeTaken}, Total Time: ${totalTimeSpent}`);

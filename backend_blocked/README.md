@@ -16,55 +16,47 @@ The database is managed using **Prisma**. Below is the relational schema:
 - `id` (PK)
 - `name`
 - `code` (part of compound UNIQUE with name)
-- `role` (string: e.g. 'STUDENT' | 'TEACHER')
+- `role` (string)
 - `createdAt`
 - `updatedAt`
 
 ---
 
-#### 2. `Category`
+#### 2. `Chapter`
 - `id` (PK)
-- `title` (e.g. MATH, LOGIC)
-- `color` (hex, for UI)
-- `iconPath` (for UI icons)
-- `order` (for custom ordering)
-
----
-
-#### 3. `Chapter`
-- `id` (PK)
-- `categoryId` (FK → Category.id)
 - `title`
 - `order` (for custom ordering)
 
 ---
 
-#### 4. `Exercise`
+#### 3. `Exercise`
 - `id` (PK)
-- `chapterId` (FK → Chapter.id)
 - `title`
 - `description`
 - `difficulty` (1–5)
-- `createdBy` (FK → User.id, only teachers)
+- `chapterId` (FK → Chapter.id)
+- `createdBy` (FK → User.id)
 - `visibleTo` (string, for visibility control)
 - `order` (for custom ordering)
 - `stars` (for star rating display)
+- `answer` (optional integer)
 
 ---
 
-#### 5. `ExerciseAttempt`
+#### 4. `ExerciseAttempt`
 - `id` (PK)
 - `exerciseId` (FK → Exercise.id)
 - `studentId` (FK → User.id)
-- `status` (string: e.g. 'PASSED' | 'FAILED')
+- `status` (string)
 - `attemptsCount`
 - `hintUsedCount`
+- `timeTaken` (optional, in seconds)
 - `createdAt`
 - `studentAnswer` (nullable string)
 
 ---
 
-#### 6. `StudentProgress`
+#### 5. `StudentProgress`
 - `id` (PK)
 - `studentId` (FK → User.id)
 - `chapterId` (FK → Chapter.id)
@@ -77,16 +69,17 @@ The database is managed using **Prisma**. Below is the relational schema:
 > 💡 Note:
 > - One `User` (Teacher) ➝ many `Exercise`s.
 > - One `User` (Student) ➝ many `ExerciseAttempt`s.
-> - Each `Exercise` ➝ belongs to one Teacher.
+> - Each `Exercise` ➝ belongs to one Teacher and one Chapter.
 > - Each `ExerciseAttempt` ➝ connects one Student to one Exercise.
+> - Each `StudentProgress` ➝ tracks a student's progress in a specific chapter.
 
 ---
 
 ## 🔧 Setup Instructions
 
-1. Clone the backend branch:
+1. Move the backend Dir:
 ```bash
-git clone -b backend https://github.com/YouriLangh/InteractiveLearning.git
+cd backend_blocked
 ```
 
 2. Install dependencies:
@@ -137,7 +130,8 @@ npm run dev
   ```json
   {
     "name": "Firas",
-    "code": "12345"
+    "code": "12345",
+    "role": "STUDENT"
   }
   ```
 
@@ -147,27 +141,28 @@ npm run dev
   - **Request Body:**
     ```json
     {
-      "name": "New Name",
-      "code": "54321"
+      "name": "New Name"
     }
     ```
-
-### 📚 Categories
-- `GET /api/category/` — get all categories
-- `POST /api/category/` — create category (teacher only)
-- `PUT /api/category/:id` — update category (teacher only)
-- `DELETE /api/category/:id` — delete category (teacher only)
-- `PUT /api/category/:id/order` — update category order (teacher only)
-  - **Request Body:**
-    ```json
-    { "order": 2 }
-    ```
+- `GET /api/user/students` — get all students (teacher only)
 
 ### 📖 Chapters
-- `GET /api/chapter/:id` — get chapter by id
-- `GET /api/chapter/category/:categoryId` — get chapters by category
+- `GET /api/chapter/` — get all chapters with exercises
+- `GET /api/chapter/:id` — get chapter by id with exercises
 - `POST /api/chapter/` — create chapter (teacher only)
+  - **Request Body:**
+    ```json
+    {
+      "title": "Chapter Title"
+    }
+    ```
 - `PUT /api/chapter/:id` — update chapter (teacher only)
+  - **Request Body:**
+    ```json
+    {
+      "title": "Updated Title"
+    }
+    ```
 - `DELETE /api/chapter/:id` — delete chapter (teacher only)
 - `PUT /api/chapter/:id/order` — update chapter order (teacher only)
   - **Request Body:**
@@ -179,7 +174,30 @@ npm run dev
 - `GET /api/exercise/:id` — get exercise by id
 - `GET /api/exercise/chapter/:chapterId` — get exercises by chapter
 - `POST /api/exercise/` — create exercise (teacher only)
+  - **Request Body:**
+    ```json
+    {
+      "title": "Exercise Title",
+      "description": "Exercise Description",
+      "difficulty": 3,
+      "chapterId": 1,
+      "visibleTo": "ALL",
+      "stars": 0,
+      "order": 0
+    }
+    ```
 - `PUT /api/exercise/:id` — update exercise (teacher only)
+  - **Request Body:**
+    ```json
+    {
+      "title": "Updated Title",
+      "description": "Updated Description",
+      "difficulty": 4,
+      "visibleTo": "TEACHERS_ONLY",
+      "stars": 5,
+      "order": 1
+    }
+    ```
 - `DELETE /api/exercise/:id` — delete exercise (teacher only)
 - `PUT /api/exercise/:id/order` — update exercise order (teacher only)
   - **Request Body:**
@@ -209,31 +227,36 @@ npm run dev
 - `PUT /api/exercise-attempt/:id/answer` — submit student answer
   - **Request Body:**
     ```json
-    { "answer": "42", "isCorrect": true }
+    {
+      "answer": "42",
+      "isCorrect": true,
+      "timeTaken": 120,
+      "isCleanup": false
+    }
     ```
 
 ### 📈 Student Progress
 - `GET /api/progress/:studentId/chapter/:chapterId` — get student progress (teacher or self)
+- `GET /api/progress/:studentId` — get full student progress across all chapters
+- `GET /api/progress/:studentId/success-rate` — get student's overall success rate
 - `PUT /api/progress/:studentId/chapter/:chapterId` — update student progress (student only)
   - **Request Body:**
     ```json
-    { "completedExercises": 5, "successRate": 0.8 }
-    ```
-- `GET /api/progress/:studentId/success-rate` — get student's overall success rate
-  - **Response:**
-    ```json
     {
-      "studentId": 1,
-      "successRate": 75.5,
-      "totalExercises": 20,
-      "solvedExercises": 15
+      "completedExercises": 5,
+      "successRate": 80
     }
     ```
 
----
-
-##  Prisma Notice
-
-This backend uses **Prisma** as the ORM. Contact me directly if you need the **DATABASE_URL API key** to connect.
+### 📸 Image Processing
+- `POST /api/upload/solve` — process and analyze uploaded image
+  - **Request Body:**
+    ```json
+    {
+      "image": "base64_encoded_image",
+      "fileType": "image/png",
+      "answer": 5
+    }
+    ```
 
 ---
